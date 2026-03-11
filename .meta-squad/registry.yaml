@@ -1,0 +1,10 @@
+# Meta-Squad Registry — andi-squads
+# Auto-populated by `squad meta discover`
+#
+# This file tracks all known squads in this meta-squad.
+# Edit manually or run `squad meta discover --register` to update.
+
+version: "1.0"
+metaSquad: "andi-squads"
+leader: "andi"
+squads: []

@@ -1,0 +1,60 @@
+{
+  "agents": {
+    "burns": {
+      "persistent_name": "Burns",
+      "universe": "The Simpsons",
+      "role": "Lead / Architect",
+      "created_at": "2026-03-11T19:41:08Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "frink": {
+      "persistent_name": "Frink",
+      "universe": "The Simpsons",
+      "role": "Systems Engineer",
+      "created_at": "2026-03-11T19:41:08Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "smithers": {
+      "persistent_name": "Smithers",
+      "universe": "The Simpsons",
+      "role": "Platform Engineer",
+      "created_at": "2026-03-11T19:41:08Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "skinner": {
+      "persistent_name": "Skinner",
+      "universe": "The Simpsons",
+      "role": "Governance Analyst",
+      "created_at": "2026-03-11T19:41:08Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "moe": {
+      "persistent_name": "Moe",
+      "universe": "The Simpsons",
+      "role": "Skeptic / Critic",
+      "created_at": "2026-03-11T19:41:08Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "chalmers": {
+      "persistent_name": "Chalmers",
+      "universe": "The Simpsons",
+      "role": "Org Pattern Specialist",
+      "created_at": "2026-03-11T19:41:08Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "lenny": {
+      "persistent_name": "Lenny",
+      "universe": "The Simpsons",
+      "role": "Core Developer",
+      "created_at": "2026-03-12T11:11:00Z",
+      "legacy_named": false,
+      "status": "active"
+    }
+  }
+}

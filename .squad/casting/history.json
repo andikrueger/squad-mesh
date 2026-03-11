@@ -1,0 +1,24 @@
+{
+  "universe_usage_history": [
+    {
+      "universe": "The Simpsons",
+      "assignment_id": "squad-architecture-2026-03-11",
+      "timestamp": "2026-03-11T19:41:08Z",
+      "agent_count": 6
+    }
+  ],
+  "assignment_cast_snapshots": {
+    "squad-architecture-2026-03-11": {
+      "universe": "The Simpsons",
+      "timestamp": "2026-03-11T19:41:08Z",
+      "cast": {
+        "burns": "Lead / Architect",
+        "frink": "Systems Engineer",
+        "smithers": "Platform Engineer",
+        "skinner": "Governance Analyst",
+        "moe": "Skeptic / Critic",
+        "chalmers": "Org Pattern Specialist"
+      }
+    }
+  }
+}

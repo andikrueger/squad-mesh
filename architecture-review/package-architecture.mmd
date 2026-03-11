@@ -1,0 +1,132 @@
+graph TB
+    subgraph EXT["🔌 External Interfaces"]
+        CLI["CLI (squad-meta)"]
+        PROG["Programmatic API"]
+        FS["Filesystem (.squad/, .meta-squad/)"]
+    end
+
+    subgraph DISCOVERY["📍 Discovery Subsystem"]
+        SCAN["Filesystem Scanner"]
+        MARKERS["Squad Markers<br/>(squad.config.ts, .squad)"]
+        REGISTRY["Registry (registry.yaml)"]
+        SQUADLIST["Squad List"]
+    end
+
+    subgraph STATUS["👁️ Status/COP Subsystem"]
+        COLLECT["collectSquadStatus()"]
+        HEALTH["Health Assessment<br/>(green/yellow/red)"]
+        WORKITEMS["Work Items<br/>Blockers<br/>Decisions"]
+        COP["Common Operational Picture"]
+    end
+
+    subgraph STEERING["🎯 Steering Subsystem"]
+        DIRECTIVE["Directives<br/>(top-down)"]
+        PRIORITY["Priority & Deadline"]
+        RESPONSE["Directive Responses"]
+        TENSION["Cross-Squad Tensions<br/>(domain-conflict,<br/>dependency-blocked,<br/>policy-conflict)"]
+        ROUTING["Tension Routing<br/>& Escalation"]
+        TIMELINE["Governance Timeline"]
+    end
+
+    subgraph KNOWLEDGE["🧠 Knowledge Subsystem"]
+        LEARNINGS["Cross-Squad Learnings"]
+        CLASSIFY["Relevance Classification<br/>(squad-specific,<br/>domain-relevant,<br/>universal)"]
+        PROPAGATE["Learning Propagation"]
+        PATTERNS["Shared Patterns<br/>(codified rules)"]
+    end
+
+    subgraph COORDINATOR["⚙️ Coordinator Subsystem"]
+        METAPROMPT["Meta-Squad System Prompt"]
+        COPCOMPACT["Compact COP Representation"]
+        TENSIONRULES["Tension Detection Rules"]
+        DIRECTIVERULES["Directive Compliance Rules"]
+        AIINJECT["Agent Prompt Injection"]
+    end
+
+    subgraph BUILDERS["🔨 Builder Functions"]
+        DEFINECONFIG["defineMetaSquad()"]
+        DEFINEDISCO["defineDiscovery()"]
+        DEFINESTEER["defineSteering()"]
+        DEFINEVIS["defineVisibility()"]
+        DEFINEKNOW["defineKnowledge()"]
+        DEFINEHEALTH["defineHealth()"]
+    end
+
+    %% External to Discovery
+    CLI -->|squad-meta discover| DISCOVERY
+    PROG -->|discoverSquads()| DISCOVERY
+    FS -->|config | MARKERS
+    FS -->|registry.yaml| REGISTRY
+
+    %% Discovery internals
+    SCAN --> MARKERS
+    MARKERS --> REGISTRY
+    REGISTRY --> SQUADLIST
+    SCAN --> REGISTRY
+
+    %% Discovery to Status/COP
+    SQUADLIST -->|target squads| COLLECT
+    SQUADLIST -->|track health| HEALTH
+
+    %% Status/COP internals
+    COLLECT --> WORKITEMS
+    HEALTH --> WORKITEMS
+    WORKITEMS --> COP
+
+    %% Status to Coordinator
+    COP -->|current state| METAPROMPT
+    COP -->|health snapshot| COPCOMPACT
+
+    %% Discovery to Steering
+    SQUADLIST -->|target directives| DIRECTIVE
+    SQUADLIST -->|tension participants| TENSION
+
+    %% Steering internals
+    DIRECTIVE --> PRIORITY
+    PRIORITY --> RESPONSE
+    TENSION --> ROUTING
+    ROUTING -->|escalation| TIMELINE
+
+    %% Steering to Coordinator
+    DIRECTIVE -->|directive list| DIRECTIVERULES
+    TENSION -->|tension state| TENSIONRULES
+    ROUTING -->|escalation rules| TENSIONRULES
+    TIMELINE -->|audit trail| METAPROMPT
+
+    %% Knowledge from all squads
+    SQUADLIST -->|source of learnings| LEARNINGS
+    LEARNINGS --> CLASSIFY
+    CLASSIFY -->|filtered| PROPAGATE
+    PROPAGATE -->|propagate back| SQUADLIST
+    PROPAGATE --> PATTERNS
+
+    %% Knowledge to Coordinator (future)
+    PATTERNS -.->|context| METAPROMPT
+
+    %% Builders configure everything
+    DEFINECONFIG --> METAPROMPT
+    DEFINEDISCO --> SCAN
+    DEFINESTEER --> ROUTING
+    DEFINEVIS --> COP
+    DEFINEKNOW --> CLASSIFY
+    DEFINEHEALTH --> HEALTH
+
+    %% External access to Coordinator
+    PROG -->|generateMetaSquadPrompt()| AIINJECT
+    AIINJECT -->|ready for AI agents| CLI
+
+    %% CLI produces outputs
+    CLI -->|discover summary| FS
+    CLI -->|status report| FS
+    PROG -->|COP json| FS
+
+    %% Styling
+    classDef subsystem fill:#e1f5ff,stroke:#01579b,stroke-width:2px,color:#000
+    classDef external fill:#fff3e0,stroke:#e65100,stroke-width:2px,color:#000
+    classDef builder fill:#f3e5f5,stroke:#4a148c,stroke-width:2px,color:#000
+    classDef data fill:#e8f5e9,stroke:#1b5e20,stroke-width:2px,color:#000
+
+    class DISCOVERY,STATUS,STEERING,KNOWLEDGE,COORDINATOR subsystem
+    class EXT external
+    class BUILDERS builder
+    class SQUADLIST,COP,DIRECTIVE,TENSION,LEARNINGS,PATTERNS,TIMELINE data
