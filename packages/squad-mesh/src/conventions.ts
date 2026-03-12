@@ -93,10 +93,10 @@ export function initMetaSquadDir(rootDir: string): string {
   if (!fs.existsSync(registryPath)) {
     const registryContent = [
       '# Meta-Squad Registry',
-      '# Auto-populated by `squad meta discover`',
+      '# Auto-populated by `squad mesh discover`',
       '#',
       '# This file tracks all known squads in this meta-squad.',
-      '# Edit manually or run `squad meta discover --register` to update.',
+      '# Edit manually or run `squad mesh discover --register` to update.',
       '',
       'version: "1.0"',
       'metaSquad: ""',
@@ -207,14 +207,14 @@ export function validateMetaSquadDir(rootDir: string): ValidationResult {
   // Check registry
   const registryPath = path.join(metaDir, REGISTRY_FILE);
   if (!fs.existsSync(registryPath)) {
-    warnings.push('Missing registry.yaml — run `squad meta discover --register`');
+    warnings.push('Missing registry.yaml — run `squad mesh discover --register`');
   }
 
   // Check for config
   const hasConfigTs = fs.existsSync(path.join(rootDir, CONFIG_FILE_TS));
   const hasConfigJson = fs.existsSync(path.join(metaDir, CONFIG_FILE_JSON));
   if (!hasConfigTs && !hasConfigJson) {
-    warnings.push('No meta-squad config found — run `squad meta init`');
+    warnings.push('No meta-squad config found — run `squad mesh init`');
   }
 
   // Check governance timeline

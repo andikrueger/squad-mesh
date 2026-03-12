@@ -1,12 +1,13 @@
 #!/usr/bin/env node
 /**
- * squad-meta CLI — Standalone entry point for meta-squad commands.
+ * squad-mesh CLI — Standalone entry point for mesh orchestration commands.
  *
  * Usage:
- *   squad-meta discover [--root <path>] [--markers <m1,m2>] [--json]
- *   squad-meta status   [--format table|json]
- *   squad-meta health   [--json]
- *   squad-meta help
+ *   squad-mesh discover [--root <path>] [--markers <m1,m2>] [--json]
+ *   squad-mesh status   [--format table|json]
+ *   squad-mesh health   [--json]
+ *   squad-mesh init     [--name <name>]
+ *   squad-mesh help
  *
  * Designed as a standalone CLI that can later be registered as a
  * Squad SDK plugin via registerCommands().
@@ -14,10 +15,12 @@
  * @module cli/main
  */
 
-import { discoverSquads, getDefaultDiscoveryConfig, collectAllStatuses, generateCOP, generateCompactStatus } from '../index.js';
-import type { DiscoveryConfig, SquadMarker } from '../types.js';
-import { META_SQUAD_COMMANDS } from './index.js';
+import { discoverSquads, getDefaultDiscoveryConfig, collectAllStatuses, generateCOP, generateCompactStatus, initMetaSquadDir, generateConfigTemplate, resolveMetaSquadDir, META_SQUAD_DIR, REGISTRY_FILE } from '../index.js';
+import type { DiscoveryConfig, SquadMarker, SquadIdentity } from '../types.js';
+import { MESH_COMMANDS } from './index.js';
 import type { CliCommand } from './index.js';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 // ── ANSI helpers ─────────────────────────────────────────────────────────────
 
@@ -42,10 +45,10 @@ function healthIcon(level: string): string {
 
 function parseArgs(argv: string[]): { command: string; opts: Record<string, string | boolean> } {
   const positional = argv.slice(2);
-  // Strip leading "meta" if present (for `squad meta discover` style invocation)
+  // Strip leading "meta" or "mesh" if present (for `squad mesh discover` style invocation)
   let command = positional[0] ?? 'help';
   let startIdx = 1;
-  if (command === 'meta') {
+  if (command === 'meta' || command === 'mesh') {
     command = positional[1] ?? 'help';
     startIdx = 2;
   }
@@ -123,6 +126,50 @@ async function runDiscover(opts: Record<string, string | boolean>): Promise<void
       console.log(`  ${err.path}: ${err.error}`);
     }
   }
+
+  // --register: persist discovered squads to .meta-squad/registry.yaml
+  if (opts['register'] === true && result.squads.length > 0) {
+    const cwd = process.cwd();
+    let metaDir = resolveMetaSquadDir(cwd);
+    if (!metaDir) {
+      metaDir = initMetaSquadDir(cwd);
+      console.log(`\n${GREEN}✓${RESET} Created ${BOLD}.meta-squad/${RESET} directory`);
+    }
+
+    const registryPath = path.join(metaDir, REGISTRY_FILE);
+    const yaml = serializeRegistryYaml(result.squads, result.discoveredAt);
+    fs.writeFileSync(registryPath, yaml, 'utf-8');
+    console.log(`${GREEN}✓${RESET} Registered ${BOLD}${result.squads.length}${RESET} squad(s) in ${DIM}${registryPath}${RESET}`);
+  }
+}
+
+/**
+ * Serialize discovered squads into the registry YAML format.
+ */
+function serializeRegistryYaml(squads: SquadIdentity[], discoveredAt: string): string {
+  const lines: string[] = [
+    '# Meta-Squad Registry',
+    '# Auto-populated by `squad mesh discover --register`',
+    '#',
+    `# Last scan: ${discoveredAt}`,
+    '',
+    'version: "1.0"',
+    'metaSquad: ""',
+    'leader: ""',
+    `lastScan: "${discoveredAt}"`,
+    'squads:',
+  ];
+
+  for (const squad of squads) {
+    lines.push(`  - name: ${squad.name}`);
+    lines.push(`    purpose: ${squad.purpose}`);
+    lines.push(`    path: ${squad.path}`);
+    lines.push(`    discoveredVia: ${squad.discoveredVia}`);
+    lines.push(`    registeredAt: ${squad.registeredAt}`);
+  }
+
+  lines.push('');
+  return lines.join('\n');
 }
 
 async function runStatus(opts: Record<string, string | boolean>): Promise<void> {
@@ -176,29 +223,57 @@ async function runHealth(opts: Record<string, string | boolean>): Promise<void> 
   await runStatus({ ...opts, format: opts['json'] ? 'json' : 'table' } as Record<string, string | boolean>);
 }
 
+async function runInit(opts: Record<string, string | boolean>): Promise<void> {
+  const cwd = process.cwd();
+  const name = typeof opts['name'] === 'string' ? opts['name'] : path.basename(cwd);
+  
+  // Initialize .meta-squad/ directory
+  const metaDir = initMetaSquadDir(cwd);
+  console.log(`${GREEN}✓${RESET} Initialized ${BOLD}.meta-squad/${RESET} directory structure`);
+  
+  // Generate config file
+  const configPath = path.join(cwd, 'meta-squad.config.ts');
+  if (!fs.existsSync(configPath)) {
+    const configContent = generateConfigTemplate(
+      name,
+      'Multi-squad orchestration and coordination'
+    );
+    fs.writeFileSync(configPath, configContent, 'utf-8');
+    console.log(`${GREEN}✓${RESET} Created ${BOLD}meta-squad.config.ts${RESET}`);
+  } else {
+    console.log(`${YELLOW}⚠${RESET} Config file already exists: ${configPath}`);
+  }
+  
+  console.log(`\n${BOLD}Next steps:${RESET}`);
+  console.log(`  1. Edit ${CYAN}meta-squad.config.ts${RESET} to configure discovery, steering, and health`);
+  console.log(`  2. Run ${CYAN}squad-mesh discover${RESET} to find sibling squads`);
+  console.log(`  3. Run ${CYAN}squad-mesh status${RESET} to view the Common Operational Picture`);
+}
+
 // ── Help ─────────────────────────────────────────────────────────────────────
 
 function printHelp(): void {
   console.log(`
-${BOLD}squad-meta${RESET} — Multi-squad orchestration CLI
+${BOLD}squad-mesh${RESET} — Multi-squad orchestration CLI
 
 ${BOLD}Usage:${RESET}
-  squad-meta <command> [options]
+  squad-mesh <command> [options]
 
 ${BOLD}Commands:${RESET}`);
 
-  for (const cmd of META_SQUAD_COMMANDS) {
-    // Strip "meta " prefix for standalone mode
-    const name = cmd.name.replace('meta ', '');
+  for (const cmd of MESH_COMMANDS) {
+    // Strip "mesh " prefix for standalone mode
+    const name = cmd.name.replace('mesh ', '');
     console.log(`  ${BOLD}${name.padEnd(14)}${RESET} ${cmd.description}`);
   }
 
   console.log(`
 ${BOLD}Examples:${RESET}
-  squad-meta discover                      Discover sibling squads
-  squad-meta discover --root C:\\dev --json  Scan a specific root, JSON output
-  squad-meta status                        Cross-squad operational picture
-  squad-meta status --format json          Machine-readable status
+  squad-mesh init                          Initialize meta-squad configuration
+  squad-mesh discover                      Discover sibling squads
+  squad-mesh discover --root C:\\dev --json  Scan a specific root, JSON output
+  squad-mesh status                        Cross-squad operational picture
+  squad-mesh status --format json          Machine-readable status
 `);
 }
 
@@ -217,11 +292,12 @@ export function registerCommands(): {
   handlers: Record<string, (opts: Record<string, string | boolean>) => Promise<void>>;
 } {
   return {
-    commands: META_SQUAD_COMMANDS,
+    commands: MESH_COMMANDS,
     handlers: {
       discover: runDiscover,
       status: runStatus,
       health: runHealth,
+      init: runInit,
     },
   };
 }
@@ -232,6 +308,9 @@ async function main(): Promise<void> {
   const { command, opts } = parseArgs(process.argv);
 
   switch (command) {
+    case 'init':
+      await runInit(opts);
+      break;
     case 'discover':
       await runDiscover(opts);
       break;

@@ -1,7 +1,7 @@
 /**
- * CLI Command Specifications — Meta-Squad Commands
+ * CLI Command Specifications — Mesh Commands
  *
- * Defines the command structure for meta-squad CLI integration.
+ * Defines the command structure for squad-mesh CLI integration.
  * These are specifications that the Squad CLI would register when
  * the mesh extension is installed.
  *
@@ -36,13 +36,13 @@ export interface CliOption {
 }
 
 /**
- * All meta-squad CLI commands.
+ * All mesh CLI commands.
  */
-export const META_SQUAD_COMMANDS: CliCommand[] = [
+export const MESH_COMMANDS: CliCommand[] = [
   {
-    name: 'meta discover',
+    name: 'mesh discover',
     description: 'Discover sibling squads in the local filesystem',
-    usage: 'squad meta discover [--root <path>] [--markers <markers>]',
+    usage: 'squad mesh discover [--root <path>] [--markers <markers>]',
     options: [
       { name: 'root', alias: 'r', description: 'Root directory to scan', type: 'string', default: '..' },
       { name: 'markers', alias: 'm', description: 'Comma-separated squad markers', type: 'string', default: 'squad.config.ts,.squad' },
@@ -50,31 +50,31 @@ export const META_SQUAD_COMMANDS: CliCommand[] = [
       { name: 'register', description: 'Auto-register discovered squads in registry', type: 'boolean', default: false },
     ],
     examples: [
-      'squad meta discover',
-      'squad meta discover --root ~/projects --markers squad.config.ts',
-      'squad meta discover --json | jq .squads',
+      'squad mesh discover',
+      'squad mesh discover --root ~/projects --markers squad.config.ts',
+      'squad mesh discover --json | jq .squads',
     ],
   },
   {
-    name: 'meta status',
+    name: 'mesh status',
     description: 'Show cross-squad status (Common Operational Picture)',
-    usage: 'squad meta status [--squad <name>] [--format <format>]',
+    usage: 'squad mesh status [--squad <name>] [--format <format>]',
     options: [
       { name: 'squad', alias: 's', description: 'Show status for a specific squad only', type: 'string' },
       { name: 'format', alias: 'f', description: 'Output format: table, json, compact', type: 'string', default: 'table' },
       { name: 'include', description: 'Comma-separated: work,blockers,decisions,health', type: 'string', default: 'work,blockers,health' },
     ],
     examples: [
-      'squad meta status',
-      'squad meta status --squad auth-squad',
-      'squad meta status --format json',
-      'squad meta status --include work,blockers,decisions,health',
+      'squad mesh status',
+      'squad mesh status --squad auth-squad',
+      'squad mesh status --format json',
+      'squad mesh status --include work,blockers,decisions,health',
     ],
   },
   {
-    name: 'meta directive',
+    name: 'mesh directive',
     description: 'Issue a directive to one or more squads',
-    usage: 'squad meta directive <action> [options]',
+    usage: 'squad mesh directive <action> [options]',
     options: [
       { name: 'title', alias: 't', description: 'Directive title', type: 'string', required: true },
       { name: 'target', description: 'Target squad(s), comma-separated', type: 'string', required: true },
@@ -83,69 +83,69 @@ export const META_SQUAD_COMMANDS: CliCommand[] = [
       { name: 'issue', description: 'Immediately issue (skip draft)', type: 'boolean', default: false },
     ],
     examples: [
-      'squad meta directive --title "Adopt OAuth2" --target auth-squad,api-squad --priority high',
-      'squad meta directive --title "Update deps" --target "*" --issue',
-      'squad meta directive list',
-      'squad meta directive list --status open',
+      'squad mesh directive --title "Adopt OAuth2" --target auth-squad,api-squad --priority high',
+      'squad mesh directive --title "Update deps" --target "*" --issue',
+      'squad mesh directive list',
+      'squad mesh directive list --status open',
     ],
   },
   {
-    name: 'meta tensions',
+    name: 'mesh tensions',
     description: 'View and manage cross-squad tensions',
-    usage: 'squad meta tensions [list|raise|resolve|escalate] [options]',
+    usage: 'squad mesh tensions [list|raise|resolve|escalate] [options]',
     options: [
       { name: 'type', description: 'Tension type filter', type: 'string' },
       { name: 'status', description: 'Status filter: raised, investigating, resolved, escalated', type: 'string' },
       { name: 'squad', description: 'Filter by squad', type: 'string' },
     ],
     examples: [
-      'squad meta tensions list',
-      'squad meta tensions list --type domain-conflict',
-      'squad meta tensions raise --summary "Auth module ownership unclear"',
+      'squad mesh tensions list',
+      'squad mesh tensions list --type domain-conflict',
+      'squad mesh tensions raise --summary "Auth module ownership unclear"',
     ],
   },
   {
-    name: 'meta learnings',
+    name: 'mesh learnings',
     description: 'View and propagate cross-squad learnings',
-    usage: 'squad meta learnings [list|propagate|promote] [options]',
+    usage: 'squad mesh learnings [list|propagate|promote] [options]',
     options: [
       { name: 'squad', description: 'Filter by source squad', type: 'string' },
       { name: 'relevance', description: 'Filter: universal, domain-relevant, squad-specific', type: 'string' },
       { name: 'format', description: 'Output format: table, json', type: 'string', default: 'table' },
     ],
     examples: [
-      'squad meta learnings list',
-      'squad meta learnings list --relevance universal',
-      'squad meta learnings propagate --id learn-abc123',
-      'squad meta learnings promote --ids learn-a,learn-b --name "error-handling-pattern"',
+      'squad mesh learnings list',
+      'squad mesh learnings list --relevance universal',
+      'squad mesh learnings propagate --id learn-abc123',
+      'squad mesh learnings promote --ids learn-a,learn-b --name "error-handling-pattern"',
     ],
   },
   {
-    name: 'meta health',
+    name: 'mesh health',
     description: 'Show health reports for all squads',
-    usage: 'squad meta health [--squad <name>] [--signals]',
+    usage: 'squad mesh health [--squad <name>] [--signals]',
     options: [
       { name: 'squad', description: 'Show health for a specific squad', type: 'string' },
       { name: 'signals', description: 'Show individual health signals', type: 'boolean', default: false },
       { name: 'format', description: 'Output format: table, json', type: 'string', default: 'table' },
     ],
     examples: [
-      'squad meta health',
-      'squad meta health --squad api-squad --signals',
-      'squad meta health --format json',
+      'squad mesh health',
+      'squad mesh health --squad api-squad --signals',
+      'squad mesh health --format json',
     ],
   },
   {
-    name: 'meta init',
+    name: 'mesh init',
     description: 'Initialize a meta-squad configuration in the current directory',
-    usage: 'squad meta init [--name <name>]',
+    usage: 'squad mesh init [--name <name>]',
     options: [
       { name: 'name', description: 'Meta-squad name', type: 'string' },
       { name: 'interactive', alias: 'i', description: 'Interactive setup', type: 'boolean', default: true },
     ],
     examples: [
-      'squad meta init',
-      'squad meta init --name platform-engineering',
+      'squad mesh init',
+      'squad mesh init --name platform-engineering',
     ],
   },
 ];
@@ -155,7 +155,7 @@ export const META_SQUAD_COMMANDS: CliCommand[] = [
 // ============================================================================
 
 /**
- * Handle the `squad meta discover` command.
+ * Handle the `squad mesh discover` command.
  */
 export async function handleDiscover(config: MetaSquadConfig): Promise<{
   squads: SquadIdentity[];
@@ -169,7 +169,7 @@ export async function handleDiscover(config: MetaSquadConfig): Promise<{
 }
 
 /**
- * Handle the `squad meta status` command.
+ * Handle the `squad mesh status` command.
  */
 export async function handleStatus(
   config: MetaSquadConfig,
@@ -182,7 +182,7 @@ export async function handleStatus(
 }
 
 /**
- * Handle the `squad meta directive` command (create + issue).
+ * Handle the `squad mesh directive` command (create + issue).
  */
 export function handleDirective(
   metaSquadDir: string,

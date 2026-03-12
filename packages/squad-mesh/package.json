@@ -12,7 +12,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "squad-meta": "./dist/cli/main.js"
+    "squad-mesh": "./dist/cli/main.js"
   },
   "files": [
     "dist",

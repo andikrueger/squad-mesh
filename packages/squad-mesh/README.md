@@ -110,26 +110,29 @@ for (const squad of result.squads) {
 
 ## CLI Usage
 
-The package ships a standalone `squad-meta` binary:
+The package ships a standalone `squad-mesh` binary:
 
 ```bash
+# Initialize meta-squad configuration
+npx squad-mesh init
+
 # Discover squads in the parent directory
-npx squad-meta discover
+npx squad-mesh discover
 
 # Discover with custom root and JSON output
-npx squad-meta discover --root ../projects --json
+npx squad-mesh discover --root ../projects --json
 
 # Cross-squad Common Operational Picture
-npx squad-meta status
+npx squad-mesh status
 
 # Machine-readable status
-npx squad-meta status --format json
+npx squad-mesh status --format json
 
 # Health check (delegates to status with health focus)
-npx squad-meta health
+npx squad-mesh health
 
 # List available commands
-npx squad-meta help
+npx squad-mesh help
 ```
 
 ## API Reference

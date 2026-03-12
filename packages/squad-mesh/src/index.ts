@@ -146,7 +146,7 @@ export {
 export type { MetaSquadSubdir, ValidationResult } from './conventions.js';
 
 // --- CLI Commands ---
-export { META_SQUAD_COMMANDS, handleDiscover, handleStatus, handleDirective } from './cli/index.js';
+export { MESH_COMMANDS, handleDiscover, handleStatus, handleDirective } from './cli/index.js';
 export type { CliCommand, CliOption } from './cli/index.js';
 
 // --- CLI Standalone + SDK Plugin Hook ---
