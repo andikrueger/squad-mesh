@@ -30,14 +30,131 @@ squad-mesh treats your squads as nodes in a coordination graph. It handles disco
 - **Directed edges** = directives flowing from leader to target squads
 - **Signals** = tensions routed between squads when cross-cutting issues arise
 - **Propagation** = learnings classified by relevance (squad-specific → domain → universal) and pushed through the mesh
+- **Backpointers** = each registered squad gets a `.squad/mesh-link.json` pointing back to the mesh root, enabling squads to contact the mesh
 
-The mesh coordinator generates system prompt fragments that inject organizational context into each squad’s agent. Squads don’t need to know about the mesh — the mesh knows about them.
+The mesh coordinator generates system prompt fragments that inject organizational context into each squad's agent. Squads don't need to know about the mesh — the mesh knows about them.
+
+## Install
+
+**Recommended: install globally.** The primary value of squad-mesh is its CLI commands and file-based wisdom skills — no per-repo `node_modules` needed.
+
+```bash
+npm install -g squad-mesh
+```
+
+> **Alternative:** `npm install squad-mesh` locally if you need the programmatic Bridge API (`import from 'squad-mesh'`). The CLI commands work either way.
+
+After installing, verify:
+
+```bash
+squad-mesh --version   # → 0.2.0
+squad-mesh help        # → list all commands
+```
 
 ## Quick Start
 
+### 1. Initialize the mesh (in your mesh root directory)
+
 ```bash
-npm install squad-mesh
+cd ~/dev                       # or wherever your squads live
+squad-mesh init
 ```
+
+This creates `.meta-squad/` with configuration, registry, and subdirectories for learnings, patterns, and status.
+
+### 2. Discover squads
+
+```bash
+squad-mesh discover                     # scan parent directory
+squad-mesh discover --root ./projects   # scan a specific root
+squad-mesh discover --register          # persist to registry.yaml + write backpointers
+```
+
+`--register` writes a `.squad/mesh-link.json` backpointer into each discovered squad, linking it back to the mesh.
+
+### 3. Register individual squads into the mesh
+
+From inside any squad repo:
+
+```bash
+squad-mesh init-squad --mesh-root ~/dev
+squad-mesh init-squad --mesh-root ~/dev --mesh-url https://github.com/org/mesh
+squad-mesh init-squad --mesh-root ~/dev --name my-mesh
+```
+
+This:
+- Creates/updates `.squad/mesh-link.json` (backpointer with mesh root path + optional URL)
+- Installs `.squad/skills/mesh-wisdom/SKILL.md` (teaches squad agents how to access mesh knowledge)
+
+### 4. Share knowledge across squads
+
+```bash
+squad-mesh yokoten                # collect and propagate learnings
+squad-mesh yokoten --dry-run      # preview without writing
+squad-mesh yokoten --json         # machine-readable output
+```
+
+### 5. Monitor the mesh
+
+```bash
+squad-mesh status                 # Common Operational Picture
+squad-mesh status --format json   # machine-readable
+squad-mesh health                 # cross-squad health check
+```
+
+### Recommended Workflow
+
+```
+squad-mesh init                                                   # 1. Scaffold mesh root
+squad-mesh discover --register                                    # 2. Find squads, write backpointers
+cd ~/dev/my-squad && squad-mesh init-squad --mesh-root ~/dev      # 3. Per-squad setup
+squad-mesh yokoten                                                # 4. Propagate learnings
+squad-mesh status                                                 # 5. Monitor
+```
+
+## CLI Reference
+
+| Command | Description |
+|---------|-------------|
+| `squad-mesh init` | Initialize `.meta-squad/` directory structure in the current directory |
+| `squad-mesh discover [--root <path>] [--json] [--register]` | Discover squads on the filesystem. `--register` persists to registry + writes backpointers |
+| `squad-mesh init-squad --mesh-root <path> [--mesh-url <url>] [--name <mesh>]` | Register current squad into a mesh. Creates backpointer + installs wisdom skill |
+| `squad-mesh yokoten [--root <path>] [--json] [--dry-run]` | Collect and propagate cross-squad learnings (knowledge sharing) |
+| `squad-mesh status [--format json]` | Generate Common Operational Picture across all squads |
+| `squad-mesh health` | Cross-squad health check |
+| `squad-mesh help` | List available commands |
+| `squad-mesh --version` | Print version |
+
+## Backpointers & Wisdom Skills
+
+When you run `discover --register` or `init-squad`, squad-mesh writes two files into the squad:
+
+### `.squad/mesh-link.json` (Backpointer)
+
+```json
+{
+  "meshRoot": "/home/user/dev",
+  "meshName": "platform-engineering",
+  "registeredAt": "2026-03-12T10:00:00.000Z",
+  "registryPath": "/home/user/dev/.meta-squad/registry.yaml",
+  "version": "0.2.0",
+  "meshUrl": "https://github.com/org/mesh"
+}
+```
+
+This tells the squad how to find the mesh. The `meshUrl` field is optional and only present if `--mesh-url` was provided.
+
+### `.squad/skills/mesh-wisdom/SKILL.md` (Wisdom Skill)
+
+An auto-generated skill file that teaches squad agents how to:
+- Query the mesh for shared learnings and patterns
+- Contribute their own learnings back to the mesh
+- Check the mesh's Common Operational Picture
+- Contact the mesh via CLI commands or the Bridge API
+
+Squad agents that support skill files (e.g., Copilot CLI) automatically pick this up.
+
+## Programmatic Quick Start
 
 Create a `meta-squad.config.ts`:
 
@@ -108,31 +225,42 @@ for (const squad of result.squads) {
 //   ...
 ```
 
-## CLI Usage
+## Bridge API (Programmatic Access)
 
-The package ships a standalone `squad-mesh` binary:
+The Bridge API lets squad agents access mesh data programmatically. Import from `'squad-mesh'`:
 
-```bash
-# Initialize meta-squad configuration
-npx squad-mesh init
+```ts
+import {
+  readMeshLink,
+  getMeshLearnings,
+  getMeshPatterns,
+  contributeLearning,
+  getMeshStatus,
+} from 'squad-mesh';
+```
 
-# Discover squads in the parent directory
-npx squad-mesh discover
+| Function | Description |
+|----------|-------------|
+| `readMeshLink(squadRoot?)` | Read `.squad/mesh-link.json` backpointer. Returns `MeshLink` or `null` |
+| `getMeshLearnings(meshRoot, options?)` | Fetch learnings from the mesh. Filter by tags, relevance, recency |
+| `getMeshPatterns(meshRoot)` | Fetch promoted patterns from the mesh |
+| `contributeLearning(meshRoot, learning)` | Submit a new learning to the mesh |
+| `getMeshStatus(meshRoot)` | Get the mesh's Common Operational Picture |
 
-# Discover with custom root and JSON output
-npx squad-mesh discover --root ../projects --json
+### MeshLink Type
 
-# Cross-squad Common Operational Picture
-npx squad-mesh status
+```ts
+import type { MeshLink } from 'squad-mesh';
 
-# Machine-readable status
-npx squad-mesh status --format json
-
-# Health check (delegates to status with health focus)
-npx squad-mesh health
-
-# List available commands
-npx squad-mesh help
+// Shape:
+interface MeshLink {
+  meshRoot: string;       // Absolute path to mesh root directory
+  meshName: string;       // Name of the mesh (from registry)
+  registeredAt: string;   // ISO-8601 timestamp
+  registryPath: string;   // Path to registry.yaml
+  version: string;        // squad-mesh version that wrote this
+  meshUrl?: string;       // Optional URL for remote mesh access
+}
 ```
 
 ## API Reference
@@ -146,6 +274,7 @@ npx squad-mesh help
 | Steering | `createDirective()`, `issueDirective()`, `saveDirective()`, `raiseTension()`, `routeTension()`, `initializeSteering()` | Top-down directives, cross-squad tension routing, auto-escalation |
 | Knowledge | `collectSquadLearnings()`, `collectAllLearnings()`, `filterPropagatable()`, `promoteToPattern()`, `saveLearning()` | Cross-squad learning propagation (**experimental**) |
 | Coordinator | `generateMetaSquadPrompt()`, `generateCompactStatus()`, `generateTensionDetectionRules()`, `generateDirectiveComplianceRules()` | Agent prompt injection for AI coordinators |
+| Bridge | `readMeshLink()`, `getMeshLearnings()`, `getMeshPatterns()`, `contributeLearning()`, `getMeshStatus()` | Programmatic mesh access from squad agents |
 | Builders | `defineMetaSquad()`, `defineDiscovery()`, `defineSteering()`, `defineVisibility()`, `defineKnowledge()`, `defineHealth()` | Type-safe, runtime-validated configuration |
 
 ### Type Exports
@@ -159,6 +288,7 @@ import type {
   SquadIdentity, SquadStatus, CommonOperationalPicture,
   Directive, CrossSquadTension, CrossSquadLearning,
   DiscoveryResult, DiscoveryError, DiscoveryWarning,
+  MeshLink,
 } from 'squad-mesh';
 ```
 
@@ -232,9 +362,11 @@ The `meta-squad.config.ts` file uses the `defineMetaSquad()` builder. All subsec
 
 - **Local-first** — All discovery runs against the local filesystem. No network calls, no servers, no auth. Works offline, works in CI, works anywhere Node runs.
 - **Mesh topology** — Squads are nodes. Directives are directed edges from leader to targets. Tensions are cross-squad signals routed by the mesh. Knowledge propagates through edges based on relevance classification. The topology is a directed graph today; future versions add cycle detection and centrality analysis.
-- **AI-native** — The coordinator subsystem generates system prompt fragments that inject organizational awareness into squad agents. Agents don’t call an API — the mesh writes rules into their prompts. This is designed for LLM-powered agents, not human org charts.
-- **File-native** — All state (directives, tensions, learnings, status) persists as JSON in `.meta-squad/`. Everything is git-trackable. No database, no external state store.
-- **Non-destructive** — The mesh never writes to squad internals. It reads `.squad/` directories, `.meta-squad/status.json`, and squad configs. Squad autonomy is preserved by design.
+- **AI-native** — The coordinator subsystem generates system prompt fragments that inject organizational awareness into squad agents. Agents don't call an API — the mesh writes rules into their prompts. This is designed for LLM-powered agents, not human org charts.
+- **File-native** — All state (directives, tensions, learnings, status) persists as JSON/YAML in `.meta-squad/`. Everything is git-trackable. No database, no external state store.
+- **Non-destructive** — The mesh reads squad data and writes only to `.squad/mesh-link.json` and `.squad/skills/` (with consent via `init-squad` or `--register`). Squad autonomy is preserved by design.
+- **Backpointer-linked** — Each registered squad carries a `.squad/mesh-link.json` that points back to the mesh root. This enables squads to locate and communicate with the mesh without hardcoded paths.
+- **Skill-based communication** — The wisdom skill (`.squad/skills/mesh-wisdom/SKILL.md`) teaches squad agents how to query the mesh for learnings, patterns, and status. No custom tooling required — agents use their existing skill system.
 - **Graph-ready** — The node/edge model maps directly to graph primitives. Current implementation is traversal-only. Planned: DAG validation, hop-based knowledge propagation, squad affinity scoring, centrality-based priority routing.
 - **Extensible** — Built as a Squad SDK extension. The architecture accommodates future remote discovery, MCP transport, and federated meshes without breaking the local-first contract.
 
@@ -242,9 +374,10 @@ The `meta-squad.config.ts` file uses the `defineMetaSquad()` builder. All subsec
 
 | Version | Focus | Key Features |
 |---------|-------|-------------|
-| **v0.2** | Graph structure | DAG-based directive dependencies, cycle detection, knowledge graph relationships between learnings |
+| **v0.1** | Foundation | Discovery, status/COP, steering persistence, knowledge collection, CLI, coordinator prompt injection |
+| **v0.2** | Knowledge wiring | `init-squad` with backpointers, wisdom skill generation, `yokoten` CLI, Bridge API, mesh contact info (`--mesh-url`) |
 | **v0.5** | Propagation intelligence | Hop-based knowledge propagation (1-hop = direct, 2-hop = transitive), squad affinity model based on shared tags and interaction history |
-| **v1.0** | Graph analytics | Centrality analysis (which squad is the coordination bottleneck?), clustering detection, event-sourced governance timeline, GraphQL query interface for mesh state |
+| **v1.0** | Graph analytics | Centrality analysis, clustering detection, event-sourced governance timeline, GraphQL query interface for mesh state |
 
 ## Experimental Features
 

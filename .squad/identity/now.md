@@ -1,28 +1,33 @@
 # Current Focus
 
-v0.1.0 Sprint COMPLETE & RELEASE-READY ✅
+v0.2.0 RELEASED ✅
 
-## Status: Sprint Delivered
-- Smithers: README.md complete (219 lines, 9 sections, verified exports)
-- Smithers: npm pack validated (49.3 kB, 46 files, zero issues)
-- All integration tests passing (100+ tests)
-- Zero critical bugs, package ready for publish
+## Status: v0.2.0 Shipped & Documented
 
-## Sprint Summary
-**Batch 1 (7 agents):**
-- 3 bug fixes: async state sync, circular reference leak, dependency resolution
-- 49 integration tests: discovery, steering, COP rollup, health assessment
-- CLI MVP: discover/status/health/help endpoints scaffolded
+- squad-mesh v0.2.0 published (npm, git tag v0.2.0)
+- README.md fully rewritten (392 lines) — covers all v0.2.0 features
+- CHANGELOG.md comprehensive (v0.1.0 → v0.1.1 → v0.2.0)
+- All product docs audited and updated
 
-**Batch 2 (2 agents):**
-- README rewrite: API reference, configuration guide, working examples
-- npm pack validation: dependency check, build artifact inspection
+## v0.2.0 Features
 
-## Release Artifacts
-- squad-holacracy package v0.1.0 (4,918 LOC)
-- Comprehensive documentation with copy-paste examples
-- Full test coverage for core flows
-- CLI foundation ready for v0.1.1 integration
+- **`init-squad` command** — register a squad into an existing mesh with backpointers + wisdom skill
+- **`yokoten` command** — cross-squad knowledge propagation (learnings & patterns)
+- **Mesh Bridge API** — programmatic squad-to-mesh communication (`readMeshLink`, `getMeshLearnings`, etc.)
+- **Wisdom Skill Template** — auto-generated `.squad/skills/mesh-wisdom/SKILL.md` for squad agents
+- **Backpointers** — `discover --register` writes `.squad/mesh-link.json` into each registered squad
+- **Global install recommended** — `npm i -g squad-mesh`, CLI works everywhere
+
+## Release History
+
+| Version | Highlights |
+|---------|-----------|
+| v0.1.0 | Discovery, COP, steering, knowledge, CLI MVP |
+| v0.1.1 | Binary rename squad-meta → squad-mesh, discover --register fix, version flag |
+| v0.2.0 | init-squad, yokoten, bridge API, backpointers, wisdom skills, global install |
 
 ## Next Phase
-Federation testing — cross-squad MCP communication validation
+
+- Graph analytics exploration (knowledge graph, centrality, pattern discovery)
+- Federation testing — cross-squad distributed mesh validation
+- SDK plugin integration when Squad SDK adds extension hooks

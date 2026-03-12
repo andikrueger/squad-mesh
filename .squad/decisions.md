@@ -221,7 +221,7 @@ Key patterns for team discussion:
 
 ---
 
-### 6. API Contract Evolution for Squad-Holacracy (Burns)
+### 6. API Contract Evolution for squad-mesh (Burns) [Historical — pre-rename]
 **Date:** 2026-03-13  
 **Author:** Burns (Lead Architect)  
 **Status:** Proposed — awaiting team review  
@@ -230,7 +230,7 @@ Key patterns for team discussion:
 
 **Decision:**
 
-Evolve squad-holacracy from filesystem-only to contract-based access in three layers, activated by measured pain.
+Evolve squad-mesh (originally squad-holacracy) from filesystem-only to contract-based access in three layers, activated by measured pain.
 
 **Layer 1: External Doc Skill (Now)**
 - Add `.squad/skills/external-docs.md` wrapping `chub` CLI for external API documentation
@@ -252,7 +252,7 @@ Evolve squad-holacracy from filesystem-only to contract-based access in three la
 
 Issue #355 (external API docs) and cross-squad orchestration are the same architectural problem at different scales: accessing knowledge not on the local filesystem. A contract-based interface with pluggable backends (local fs, HTTP) solves both without abandoning local-first as default.
 
-Context-hub is a useful tool but wrong as an architecture. We adopt its patterns (search→fetch→annotate, incremental fetch, structured frontmatter) through a skill layer while keeping governance, trust, and git-native audit trail in squad-holacracy.
+Context-hub is a useful tool but wrong as an architecture. We adopt its patterns (search→fetch→annotate, incremental fetch, structured frontmatter) through a skill layer while keeping governance, trust, and git-native audit trail in squad-mesh.
 
 **What This Preserves:**
 - Git as substrate (Decisions 3-5)
@@ -268,7 +268,7 @@ Context-hub is a useful tool but wrong as an architecture. We adopt its patterns
 **Impact:**
 - **Types:** `SquadIdentity` gains optional `url` and `accessMode` (Layer 2)
 - **Discovery:** `DiscoverySource` gains `'remote-registry'` (Layer 2)
-- **New module:** `packages/squad-holacracy/src/api/contract.ts` (Layer 3)
+- **New module:** `packages/squad-mesh/src/api/contract.ts` (Layer 3)
 - **No breaking changes:** All current behavior preserved; new capabilities are additive
 
 **Reference:** Full analysis: `architecture-review/burns-issue355-api-contracts.md`
@@ -294,7 +294,7 @@ Keep local-first. Do not add API contracts (yet).
 **Date:** 2026-03-14  
 **Author:** Smithers (Platform Engineer)  
 **Status:** Implemented  
-**Scope:** `packages/squad-holacracy/src/discovery/`
+**Scope:** `packages/squad-mesh/src/discovery/`
 
 **Context:** The discovery engine silently swallowed errors (permissions, long paths, deleted directories) or buried them at the bottom of output. Two bugs required a pattern decision.
 
@@ -318,7 +318,7 @@ Keep local-first. Do not add API contracts (yet).
 **Date:** 2026-03-14  
 **Author:** Smithers (Platform Engineer)  
 **Status:** Implemented  
-**Scope:** `packages/squad-holacracy` — steering and knowledge modules
+**Scope:** `packages/squad-mesh/` — steering and knowledge modules
 
 **Context:** `saveDirective()` and `saveTension()` called `fs.mkdirSync()` with `{ recursive: true }` but had no error handling. If directory creation failed (permissions, missing parent, read-only FS), the data was created in memory but never persisted. The user saw no error — next run, data was gone.
 
@@ -337,11 +337,11 @@ Keep local-first. Do not add API contracts (yet).
 
 ---
 
-### 10. Integration Test Framework for squad-holacracy (Burns)
+### 10. Integration Test Framework for squad-mesh (Burns)
 **Date:** 2026-03-12  
 **Author:** Burns (Lead/Architect)  
 **Status:** Adopted  
-**Scope:** packages/squad-holacracy testing
+**Scope:** packages/squad-mesh testing
 
 **Context:** Needed a test framework for integration tests against the discovery engine and future holacracy subsystems.
 
@@ -369,7 +369,7 @@ Keep local-first. Do not add API contracts (yet).
 **Date:** 2026-03-12  
 **Author:** Burns (Lead/Architect)  
 **Status:** Observation — needs team input  
-**Scope:** `packages/squad-holacracy/src/status/`
+**Scope:** `packages/squad-mesh/src/status/`
 
 **Context:** While writing integration tests for the COP rollup pipeline, I discovered that `assessSquadHealth()` (used by `collectSquadStatus()` and `generateCOP()`) only returns `green | yellow | unknown` — never `red`. The `red` health level only surfaces through `generateHealthReport()` → `blocker-count` signal (threshold ≥ 3), which is **not** called by the COP pipeline.
 
@@ -392,16 +392,16 @@ Keep local-first. Do not add API contracts (yet).
 **Date:** 2026-03-14  
 **Author:** Burns (Lead/Architect)  
 **Status:** Implemented  
-**Scope:** `packages/squad-holacracy/tests/integration/`
+**Scope:** `packages/squad-mesh/tests/integration/`
 
 **Context:** Smithers is fixing steering persistence bugs while we need test coverage for the full directive and tension lifecycle. Tests must be resilient to both pre-fix and post-fix behavior.
 
 **Decision:**
 
-- **Zero-dep test framework:** `node:test` + `node:assert` — no Vitest/Jest. Keeps the holacracy package free of test framework dependencies.
+- **Zero-dep test framework:** `node:test` + `node:assert` — no Vitest/Jest. Keeps the squad-mesh package free of test framework dependencies.
 - **Real filesystem, temp dirs:** Tests use `os.tmpdir()` with cleanup in `after()`. No mocks — we're testing actual persistence behavior.
 - **Self-healing persistence validated:** `saveDirective()` creates its own directories. Tests confirm this works, making Smithers' mkdir fixes complementary rather than blocking.
-- **Added `test:integration` script** to package.json: `npx tsx --test packages/squad-holacracy/tests/integration/*.test.ts`
+- **Added `test:integration` script** to package.json: `npx tsx --test packages/squad-mesh/tests/integration/*.test.ts`
 
 **Consequences:**
 - Any squad member can run `npm run test:integration` from the repo root to validate steering
@@ -414,14 +414,14 @@ Keep local-first. Do not add API contracts (yet).
 **Date:** 2026-03-12  
 **Author:** Frink (Systems Engineer)  
 **Status:** Implemented (spike)  
-**Scope:** `packages/squad-holacracy/src/cli/`
+**Scope:** `packages/squad-mesh/src/cli/`
 
-**Context:** The squad-holacracy extension had CLI command stubs (`META_SQUAD_COMMANDS`, handler functions) but no way to actually run them. The Squad SDK (`@bradygaster/squad`) has no plugin/extension hook for registering CLI commands yet.
+**Context:** The squad-mesh extension had CLI command stubs (`META_SQUAD_COMMANDS`, handler functions) but no way to actually run them. The Squad SDK (`@bradygaster/squad`) has no plugin/extension hook for registering CLI commands yet.
 
 **Decision:** **Option C: Hybrid** — Standalone CLI now, SDK plugin-ready later.
 
-- `packages/squad-holacracy/src/cli/main.ts` is the CLI entry point
-- `package.json` has `"bin": { "squad-meta": "./dist/cli/main.js" }`
+- `packages/squad-mesh/src/cli/main.ts` is the CLI entry point
+- `package.json` has `"bin": { "squad-mesh": "./dist/cli/main.js" }`
 - `registerCommands()` exported for future SDK integration
 
 ---
@@ -566,9 +566,9 @@ User query: Is `squad-graph` better than `squad-mesh`? What can we learn from gr
 - Zero new dependencies — process.argv parsing only
 
 **Consequences:**
-- Users can run `npx @bradygaster/squad-holacracy discover` today
+- Users can run `npx squad-mesh discover` today
 - When Squad SDK adds a plugin hook, we just wire `registerCommands()` into it
-- The `meta` prefix in argv is stripped if present, so `squad meta discover` will work naturally
+- CLI accepts standard subcommand syntax: `squad-mesh discover`, `squad-mesh status`, etc.
 
 **Working Commands:**
 
@@ -592,7 +592,7 @@ All 5 cross-squad capabilities (discovery, status, learning, directives, tension
 
 **Required Actions:**
 
-1. **No changes to squad-holacracy extension.** Local-first is correct.
+1. **No changes to squad-mesh extension.** Local-first is correct.
 2. **Recommend context-hub as a Squad skill** (Option A on issue #355), NOT as an architecture signal for our orchestration layer.
 3. **Track technical debt:** ~40 raw `fs.*` calls should be behind an I/O abstraction layer. This is the real preparation for future APIs — not building them now, but making them insertable later.
 
@@ -703,26 +703,27 @@ Build the multi-squad orchestration layer as an installable extension to Squad, 
 
 **Rationale:** User design preference — product must be forward-compatible with Squad SDK/CLI evolution, not locked into the current file-based governance model.
 
-**Implementation:** `packages/squad-holacracy/` extension package (4918 LOC, npm-installable) completed and integrated. All 9 integration tests passed. Ready for federation testing.
+**Implementation:** `packages/squad-mesh/` extension package (npm-installable) completed and integrated. All 9 integration tests passed. Ready for federation testing.
 
 ---
 
 ---
 
-### 17. Document v0.1.0 API via README.md
+### 17. Document API via README.md
 
-**Date:** 2026-03-12  
+**Date:** 2026-03-12 (v0.1.0), updated 2025-01-29 (v0.2.0)  
 **Author:** Smithers (Platform Engineer)  
-**Status:** Accepted  
+**Status:** Accepted — README fully rewritten for v0.2.0  
 **Scope:** Documentation, API reference
 
-The existing README for squad-holacracy was incomplete — listed unimplemented CLI commands and vague API shapes. Rewrote to 219 lines with:
+The README for squad-mesh has been rewritten for v0.2.0 (392 lines). Covers:
 
-1. **Quick Start** — working `meta-squad.config.ts` and `discoverSquads()` examples
-2. **CLI Usage** — only 4 implemented commands; removed unimplemented entries
-3. **API Reference** — all exported functions verified against `src/index.ts`
-4. **Configuration** — all 6 builders with field types
-5. **Experimental Features** — knowledge collection and steering flagged as alpha
+1. **Quick Start** — global install, init, discover, init-squad workflow
+2. **CLI Reference** — all 7 commands (init, discover, status, health, init-squad, yokoten, help)
+3. **Bridge API** — programmatic squad-to-mesh communication
+4. **Configuration** — builders and mesh config
+5. **Backpointers & Wisdom Skills** — init-squad generated artifacts
+6. **Architecture** — updated mesh topology diagram
 
 **Rationale:** Documentation must match implementation. Users should never hit "command not found" from examples.
 
