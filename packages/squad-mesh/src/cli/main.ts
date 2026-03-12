@@ -15,8 +15,10 @@
  * @module cli/main
  */
 
-import { discoverSquads, getDefaultDiscoveryConfig, collectAllStatuses, generateCOP, generateCompactStatus, initMetaSquadDir, generateConfigTemplate, resolveMetaSquadDir, META_SQUAD_DIR, REGISTRY_FILE } from '../index.js';
+import { discoverSquads, getDefaultDiscoveryConfig, collectAllStatuses, generateCOP, generateCompactStatus, initMetaSquadDir, generateConfigTemplate, resolveMetaSquadDir, META_SQUAD_DIR, REGISTRY_FILE, collectAllLearnings, filterPropagatable, saveLearning, loadPatterns } from '../index.js';
 import type { DiscoveryConfig, SquadMarker, SquadIdentity } from '../types.js';
+import { readMeshLink } from '../bridge/index.js';
+import { generateWisdomSkill } from '../bridge/wisdom-skill.js';
 import { VERSION } from '../version.js';
 import { MESH_COMMANDS } from './index.js';
 import type { CliCommand } from './index.js';
@@ -141,6 +143,30 @@ async function runDiscover(opts: Record<string, string | boolean>): Promise<void
     const yaml = serializeRegistryYaml(result.squads, result.discoveredAt);
     fs.writeFileSync(registryPath, yaml, 'utf-8');
     console.log(`${GREEN}✓${RESET} Registered ${BOLD}${result.squads.length}${RESET} squad(s) in ${DIM}${registryPath}${RESET}`);
+
+    // Write backpointer into each squad's .squad/ directory
+    let backpointerCount = 0;
+    const meshName = readMeshNameFromRegistry(registryPath);
+    for (const squad of result.squads) {
+      const squadDir = path.join(squad.path, '.squad');
+      if (!fs.existsSync(squadDir)) continue;
+      const backpointer = {
+        meshRoot: path.resolve(cwd),
+        meshName,
+        registeredAt: new Date().toISOString(),
+        registryPath: path.resolve(registryPath),
+        version: VERSION,
+      };
+      fs.writeFileSync(
+        path.join(squadDir, 'mesh-link.json'),
+        JSON.stringify(backpointer, null, 2) + '\n',
+        'utf-8',
+      );
+      backpointerCount++;
+    }
+    if (backpointerCount > 0) {
+      console.log(`${GREEN}✓${RESET} Wrote backpointers to ${BOLD}${backpointerCount}${RESET} squad(s)`);
+    }
   }
 }
 
@@ -251,6 +277,175 @@ async function runInit(opts: Record<string, string | boolean>): Promise<void> {
   console.log(`  3. Run ${CYAN}squad-mesh status${RESET} to view the Common Operational Picture`);
 }
 
+async function runInitSquad(opts: Record<string, string | boolean>): Promise<void> {
+  const cwd = process.cwd();
+  const squadDir = path.join(cwd, '.squad');
+
+  // 1. Determine mesh root — from flag, existing backpointer, or fail
+  let meshRoot = typeof opts['mesh-root'] === 'string' ? opts['mesh-root'] : undefined;
+  const meshUrl = typeof opts['mesh-url'] === 'string' ? opts['mesh-url'] : undefined;
+  let meshName = typeof opts['name'] === 'string' ? opts['name'] : '';
+
+  // Check for existing backpointer
+  const existingLink = readMeshLink(cwd);
+  if (existingLink && !meshRoot) {
+    meshRoot = existingLink.meshRoot;
+    meshName = meshName || existingLink.meshName;
+    console.log(`${DIM}Using existing mesh link → ${existingLink.meshRoot}${RESET}`);
+  }
+
+  if (!meshRoot) {
+    console.error(`${RED}Error:${RESET} --mesh-root is required (path to the mesh directory where .meta-squad/ lives)`);
+    console.error(`\n${BOLD}Usage:${RESET} squad-mesh init-squad --mesh-root <path> [--mesh-url <url>] [--name <name>]`);
+    process.exit(1);
+  }
+
+  meshRoot = path.resolve(meshRoot);
+
+  // 2. Validate the mesh root exists and has .meta-squad/
+  const metaDir = path.join(meshRoot, '.meta-squad');
+  if (!fs.existsSync(metaDir)) {
+    console.error(`${RED}Error:${RESET} No .meta-squad/ found at ${meshRoot}`);
+    console.error(`Run ${CYAN}squad-mesh init${RESET} in that directory first.`);
+    process.exit(1);
+  }
+
+  // 3. Try to read mesh name from registry
+  if (!meshName) {
+    meshName = readMeshNameFromRegistry(path.join(metaDir, REGISTRY_FILE));
+  }
+
+  // 4. Ensure .squad/ directory exists
+  if (!fs.existsSync(squadDir)) {
+    fs.mkdirSync(squadDir, { recursive: true });
+    console.log(`${GREEN}✓${RESET} Created ${BOLD}.squad/${RESET} directory`);
+  }
+
+  // 5. Write/update mesh-link.json backpointer
+  const registryPath = path.resolve(path.join(metaDir, REGISTRY_FILE));
+  const backpointer = {
+    meshRoot,
+    meshName,
+    registeredAt: existingLink?.registeredAt ?? new Date().toISOString(),
+    registryPath,
+    version: VERSION,
+    ...(meshUrl ? { meshUrl } : {}),
+  };
+  fs.writeFileSync(
+    path.join(squadDir, 'mesh-link.json'),
+    JSON.stringify(backpointer, null, 2) + '\n',
+    'utf-8',
+  );
+  console.log(`${GREEN}✓${RESET} Wrote ${BOLD}.squad/mesh-link.json${RESET} → ${DIM}${meshRoot}${RESET}`);
+
+  // 6. Install wisdom skill
+  const skillDir = path.join(squadDir, 'skills', 'mesh-wisdom');
+  fs.mkdirSync(skillDir, { recursive: true });
+  const skillContent = generateWisdomSkill(meshName, meshRoot, meshUrl);
+  fs.writeFileSync(path.join(skillDir, 'SKILL.md'), skillContent, 'utf-8');
+  console.log(`${GREEN}✓${RESET} Installed ${BOLD}.squad/skills/mesh-wisdom/SKILL.md${RESET}`);
+
+  // 7. Summary
+  console.log(`\n${BOLD}${CYAN}Squad connected to mesh!${RESET}\n`);
+  if (meshName) {
+    console.log(`  Mesh name:  ${BOLD}${meshName}${RESET}`);
+  }
+  console.log(`  Mesh root:  ${DIM}${meshRoot}${RESET}`);
+  if (meshUrl) {
+    console.log(`  Mesh URL:   ${DIM}${meshUrl}${RESET}`);
+  }
+  console.log(`  Backpointer: ${DIM}.squad/mesh-link.json${RESET}`);
+  console.log(`  Skill:       ${DIM}.squad/skills/mesh-wisdom/SKILL.md${RESET}`);
+  console.log(`\n${BOLD}Next steps:${RESET}`);
+  console.log(`  1. Your squad agents now have the ${CYAN}mesh-wisdom${RESET} skill for cross-squad knowledge`);
+  console.log(`  2. Run ${CYAN}squad-mesh yokoten${RESET} from the mesh root to share learnings`);
+  console.log(`  3. Run ${CYAN}squad-mesh status${RESET} to see the full mesh picture`);
+}
+
+/**
+ * Read the metaSquad name from registry.yaml (simple line scan).
+ */
+function readMeshNameFromRegistry(registryPath: string): string {
+  try {
+    if (!fs.existsSync(registryPath)) return '';
+    const content = fs.readFileSync(registryPath, 'utf-8');
+    const match = content.match(/^metaSquad:\s*"?([^"\n]*)"?/m);
+    return match?.[1]?.trim() ?? '';
+  } catch {
+    return '';
+  }
+}
+
+async function runYokoten(opts: Record<string, string | boolean>): Promise<void> {
+  const root = typeof opts['root'] === 'string' ? opts['root'] : '..';
+  const asJson = opts['json'] === true;
+  const dryRun = opts['dry-run'] === true;
+
+  const config: DiscoveryConfig = {
+    mode: 'hybrid',
+    scanRoots: [root],
+    markers: ['squad.config.ts', '.squad'],
+    exclude: ['node_modules', '.git', 'dist', 'build', '.next', 'coverage'],
+  };
+
+  if (!asJson) {
+    console.log(`\n${BOLD}${CYAN}Squad Yokoten${RESET} — Cross-Squad Knowledge Sharing\n`);
+    console.log(`Scanning ${root} for squad learnings...\n`);
+  }
+
+  const discoveryResult = await discoverSquads(config);
+  const allLearnings = collectAllLearnings(discoveryResult.squads);
+  const propagatable = filterPropagatable(allLearnings);
+  const squadSpecificCount = allLearnings.length - propagatable.length;
+
+  const cwd = process.cwd();
+  const metaDir = resolveMetaSquadDir(cwd) ?? path.join(cwd, META_SQUAD_DIR);
+  const patterns = fs.existsSync(metaDir) ? loadPatterns(metaDir) : [];
+
+  if (asJson) {
+    console.log(JSON.stringify({
+      totalLearnings: allLearnings.length,
+      squadsScanned: discoveryResult.squads.length,
+      propagatable: propagatable.map(l => ({
+        title: l.title,
+        source: l.sourceSquad,
+        relevance: l.relevance,
+      })),
+      squadSpecific: squadSpecificCount,
+      saved: !dryRun ? propagatable.length : 0,
+      existingPatterns: patterns.length,
+    }, null, 2));
+    return;
+  }
+
+  console.log(`Found ${BOLD}${allLearnings.length}${RESET} learnings across ${BOLD}${discoveryResult.squads.length}${RESET} squads\n`);
+
+  if (propagatable.length > 0) {
+    console.log(`${GREEN}Propagatable (${propagatable.length}):${RESET}`);
+    for (const l of propagatable) {
+      console.log(`  📚 "${l.title}" from ${BOLD}${l.sourceSquad}${RESET} ${DIM}[${l.relevance}]${RESET}`);
+    }
+  } else {
+    console.log(`${DIM}No propagatable learnings found.${RESET}`);
+  }
+
+  if (squadSpecificCount > 0) {
+    console.log(`\n${DIM}Filtered out (${squadSpecificCount} squad-specific)${RESET}`);
+  }
+
+  if (!dryRun && propagatable.length > 0) {
+    const saveDir = resolveMetaSquadDir(cwd) ?? initMetaSquadDir(cwd);
+    for (const learning of propagatable) {
+      saveLearning(saveDir, learning);
+    }
+    console.log(`\n${GREEN}✓${RESET} Saved ${BOLD}${propagatable.length}${RESET} learnings to ${DIM}.meta-squad/learnings/${RESET}`);
+  } else if (dryRun && propagatable.length > 0) {
+    console.log(`\n${YELLOW}Dry run${RESET} — no learnings saved`);
+  }
+
+  console.log(`\n${DIM}Existing patterns: ${patterns.length}${RESET}\n`);
+}
+
 // ── Help ─────────────────────────────────────────────────────────────────────
 
 function printHelp(): void {
@@ -273,8 +468,9 @@ ${BOLD}Examples:${RESET}
   squad-mesh init                          Initialize meta-squad configuration
   squad-mesh discover                      Discover sibling squads
   squad-mesh discover --root C:\\dev --json  Scan a specific root, JSON output
+  squad-mesh init-squad --mesh-root C:\\dev  Register this squad into a mesh
   squad-mesh status                        Cross-squad operational picture
-  squad-mesh status --format json          Machine-readable status
+  squad-mesh yokoten                       Share learnings across the mesh
 `);
 }
 
@@ -298,7 +494,9 @@ export function registerCommands(): {
       discover: runDiscover,
       status: runStatus,
       health: runHealth,
+      yokoten: runYokoten,
       init: runInit,
+      'init-squad': runInitSquad,
     },
   };
 }
@@ -312,6 +510,9 @@ async function main(): Promise<void> {
     case 'init':
       await runInit(opts);
       break;
+    case 'init-squad':
+      await runInitSquad(opts);
+      break;
     case 'discover':
       await runDiscover(opts);
       break;
@@ -320,6 +521,9 @@ async function main(): Promise<void> {
       break;
     case 'health':
       await runHealth(opts);
+      break;
+    case 'yokoten':
+      await runYokoten(opts);
       break;
     case 'version':
     case '--version':

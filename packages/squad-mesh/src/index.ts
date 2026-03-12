@@ -42,6 +42,8 @@ export type {
   CrossSquadLearning,
   LearningRelevance,
   SharedPattern,
+  // Mesh Link
+  MeshLink,
   // Governance
   GovernanceEvent,
   GovernanceEventType,
@@ -122,6 +124,17 @@ export {
   savePattern,
   loadPatterns,
 } from './knowledge/index.js';
+
+// --- Bridge (squad-to-mesh API) ---
+export {
+  readMeshLink,
+  getMeshLearnings,
+  getMeshPatterns,
+  contributeLearning,
+  getMeshStatus,
+} from './bridge/index.js';
+
+export { generateWisdomSkill } from './bridge/wisdom-skill.js';
 
 // --- Coordinator Prompt ---
 export {

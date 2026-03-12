@@ -136,6 +136,22 @@ export const MESH_COMMANDS: CliCommand[] = [
     ],
   },
   {
+    name: 'mesh yokoten',
+    description: 'Collect and propagate cross-squad learnings (knowledge sharing)',
+    usage: 'squad mesh yokoten [--root <path>] [--json] [--dry-run]',
+    options: [
+      { name: 'root', alias: 'r', description: 'Root directory to scan for squads', type: 'string', default: '..' },
+      { name: 'json', description: 'Output as JSON', type: 'boolean', default: false },
+      { name: 'dry-run', description: 'Show what would be propagated without saving', type: 'boolean', default: false },
+    ],
+    examples: [
+      'squad mesh yokoten',
+      'squad mesh yokoten --root ~/projects',
+      'squad mesh yokoten --dry-run',
+      'squad mesh yokoten --json',
+    ],
+  },
+  {
     name: 'mesh init',
     description: 'Initialize a meta-squad configuration in the current directory',
     usage: 'squad mesh init [--name <name>]',
@@ -146,6 +162,21 @@ export const MESH_COMMANDS: CliCommand[] = [
     examples: [
       'squad mesh init',
       'squad mesh init --name platform-engineering',
+    ],
+  },
+  {
+    name: 'mesh init-squad',
+    description: 'Register this squad into an existing mesh and install the wisdom skill',
+    usage: 'squad mesh init-squad --mesh-root <path> [--mesh-url <url>] [--name <name>]',
+    options: [
+      { name: 'mesh-root', description: 'Path to the mesh root directory (where .meta-squad/ lives)', type: 'string' },
+      { name: 'mesh-url', description: 'URL for remote mesh access (e.g. GitHub repo URL)', type: 'string' },
+      { name: 'name', description: 'Mesh name (auto-detected from registry if omitted)', type: 'string' },
+    ],
+    examples: [
+      'squad mesh init-squad --mesh-root C:\\dev',
+      'squad mesh init-squad --mesh-root ../mesh --mesh-url https://github.com/org/mesh',
+      'squad mesh init-squad --mesh-root /home/user/mesh --name platform-engineering',
     ],
   },
 ];

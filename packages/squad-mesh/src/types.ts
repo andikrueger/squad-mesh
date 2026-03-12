@@ -344,6 +344,26 @@ export interface SharedPattern {
 }
 
 // ============================================================================
+// Mesh Link — Backpointer from Squad to Mesh
+// ============================================================================
+
+/** Backpointer stored in each squad's .squad/mesh-link.json */
+export interface MeshLink {
+  /** Absolute path to the mesh root directory. */
+  meshRoot: string;
+  /** Name of the mesh this squad belongs to (optional — may be empty for auto-discovered squads). */
+  meshName: string;
+  /** ISO-8601 timestamp when the squad was registered. */
+  registeredAt: string;
+  /** Absolute path to the mesh's registry.yaml. */
+  registryPath: string;
+  /** squad-mesh version that created this link. */
+  version: string;
+  /** Optional URL for the mesh (e.g. GitHub repo URL) — enables remote/distributed mesh access. */
+  meshUrl?: string;
+}
+
+// ============================================================================
 // Governance — Meta-Squad Governance Timeline
 // ============================================================================
 

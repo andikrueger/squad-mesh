@@ -1,6 +1,6 @@
 {
   "name": "squad-mesh",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Multi-squad mesh orchestration extension for Squad SDK — cross-squad discovery, steering, visibility, and knowledge propagation",
   "type": "module",
   "exports": {

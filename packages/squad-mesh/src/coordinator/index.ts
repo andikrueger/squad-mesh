@@ -13,6 +13,8 @@ import type {
   SquadIdentity,
   Directive,
   CrossSquadTension,
+  CrossSquadLearning,
+  SharedPattern,
   MetaSquadConfig,
 } from '../types.js';
 
@@ -29,6 +31,8 @@ import type {
 export function generateMetaSquadPrompt(
   config: MetaSquadConfig,
   cop: CommonOperationalPicture,
+  learnings?: CrossSquadLearning[],
+  patterns?: SharedPattern[],
 ): string {
   const sections: string[] = [];
 
@@ -97,6 +101,43 @@ export function generateMetaSquadPrompt(
     sections.push('');
   }
 
+  // Shared knowledge (only if learnings or patterns exist)
+  const hasLearnings = learnings && learnings.length > 0;
+  const hasPatterns = patterns && patterns.length > 0;
+  if (hasLearnings || hasPatterns) {
+    sections.push(`<shared_knowledge>`);
+
+    if (hasLearnings) {
+      const relevant = learnings.filter(
+        l => l.relevance === 'universal' || l.relevance === 'domain-relevant',
+      );
+      const shown = relevant.slice(-10).reverse();
+      sections.push(
+        `Cross-squad learnings: ${learnings.length} total (showing ${shown.length} most recent)`,
+      );
+      sections.push('');
+      for (const l of shown) {
+        const preview = l.content.length > 50 ? l.content.slice(0, 50) + '...' : l.content;
+        sections.push(`- "${l.title}" (from: ${l.sourceSquad}) [${l.relevance}]`);
+        sections.push(`  ${preview}`);
+      }
+    }
+
+    if (hasPatterns) {
+      if (hasLearnings) sections.push('');
+      sections.push(`Shared patterns (${patterns.length}):`);
+      for (const p of patterns) {
+        sections.push(
+          `- ${p.name} [${p.confidence}] — Adopted by ${p.adoptedBy.length} squad(s)`,
+        );
+        sections.push(`  ${p.description}`);
+      }
+    }
+
+    sections.push(`</shared_knowledge>`);
+    sections.push('');
+  }
+
   sections.push(`</meta_squad_context>`);
 
   return sections.join('\n');
@@ -118,6 +159,9 @@ export function generateCompactStatus(cop: CommonOperationalPicture): string {
   }
   if (cop.summary.openDirectives > 0) {
     lines.push(`📋 ${cop.summary.openDirectives} open directive(s)`);
+  }
+  if (cop.summary.recentLearnings > 0) {
+    lines.push(`📚 ${cop.summary.recentLearnings} learning(s)`);
   }
 
   return lines.join(' | ');

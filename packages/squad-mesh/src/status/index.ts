@@ -18,6 +18,7 @@ import type {
   DecisionSummary,
   CommonOperationalPicture,
   CrossSquadTension,
+  CrossSquadLearning,
   Directive,
   SquadHealthReport,
   HealthSignal,
@@ -83,6 +84,7 @@ export function generateCOP(
   squads: SquadIdentity[],
   tensions?: CrossSquadTension[],
   directives?: Directive[],
+  learnings?: CrossSquadLearning[],
 ): CommonOperationalPicture {
   const statuses = collectAllStatuses(squads);
   const activeTensions = tensions ?? [];
@@ -105,7 +107,7 @@ export function generateCOP(
       blockedSquads: blockedCount,
       openTensions: activeTensions.length,
       openDirectives: openDirectives.length,
-      recentLearnings: 0, // Populated by knowledge module
+      recentLearnings: learnings?.length ?? 0,
     },
   };
 }
