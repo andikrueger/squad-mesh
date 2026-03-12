@@ -1,6 +1,6 @@
 {
   "name": "squad-mesh",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Multi-squad mesh orchestration extension for Squad SDK — cross-squad discovery, steering, visibility, and knowledge propagation",
   "type": "module",
   "exports": {
@@ -16,14 +16,13 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "tsc",
     "clean": "rimraf dist",
     "typecheck": "tsc --noEmit",
-    "test:integration": "npx tsx --test packages/squad-mesh/tests/integration/*.test.ts",
-    "test:integration": "npx tsx --test packages/squad-mesh/tests/integration/discovery.test.ts",
     "test:integration": "npx tsx --test packages/squad-mesh/tests/integration/*.test.ts"
   },
   "engines": {

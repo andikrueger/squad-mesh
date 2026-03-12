@@ -17,6 +17,7 @@
 
 import { discoverSquads, getDefaultDiscoveryConfig, collectAllStatuses, generateCOP, generateCompactStatus, initMetaSquadDir, generateConfigTemplate, resolveMetaSquadDir, META_SQUAD_DIR, REGISTRY_FILE } from '../index.js';
 import type { DiscoveryConfig, SquadMarker, SquadIdentity } from '../types.js';
+import { VERSION } from '../version.js';
 import { MESH_COMMANDS } from './index.js';
 import type { CliCommand } from './index.js';
 import * as fs from 'node:fs';
@@ -254,7 +255,7 @@ async function runInit(opts: Record<string, string | boolean>): Promise<void> {
 
 function printHelp(): void {
   console.log(`
-${BOLD}squad-mesh${RESET} — Multi-squad orchestration CLI
+${BOLD}squad-mesh${RESET} v${VERSION} — Multi-squad orchestration CLI
 
 ${BOLD}Usage:${RESET}
   squad-mesh <command> [options]
@@ -319,6 +320,11 @@ async function main(): Promise<void> {
       break;
     case 'health':
       await runHealth(opts);
+      break;
+    case 'version':
+    case '--version':
+    case '-v':
+      console.log(`squad-mesh v${VERSION}`);
       break;
     case 'help':
     case '--help':

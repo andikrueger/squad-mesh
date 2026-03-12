@@ -145,6 +145,9 @@ export {
 } from './conventions.js';
 export type { MetaSquadSubdir, ValidationResult } from './conventions.js';
 
+// --- Version ---
+export { VERSION } from './version.js';
+
 // --- CLI Commands ---
 export { MESH_COMMANDS, handleDiscover, handleStatus, handleDirective } from './cli/index.js';
 export type { CliCommand, CliOption } from './cli/index.js';
