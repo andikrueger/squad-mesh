@@ -9,6 +9,25 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-03-16 — Distributed Mesh Architecture Review (Settled)
+
+**Context:** Reviewed all 8 distributed communication documents across three model families (Opus 4.6, Sonnet 4.5, GPT-5.4). Each family independently ran three-agent analysis (architect, systems engineer, adversarial critic). Total reviewed: ~180KB of analysis.
+
+**Architecture decision:** Distributed squad communication is a transport upgrade, not an architecture change. Git is the transport for 85%+ of cases. ~30 lines of shell + 1 YAML config. Zero running services. Zero deleted subsystems reinstated (0 of 12). 125:1 ratio vs. what was deleted.
+
+**Key files produced:**
+- `distributed-mesh/README.md` — One-page architecture guide
+- `distributed-mesh/mesh.yaml.example` — Config showing all three zones
+- `distributed-mesh/sync-mesh.sh` — Reference ~30-line sync script
+- `distributed-mesh/SKILL.md` — Squad skill file for integration
+- `.squad/decisions/inbox/burns-distributed-review.md` — Decision record
+
+**Squad integration path:** Single SKILL.md file at `.squad/skills/distributed-mesh/SKILL.md`. No code changes to Squad. The skill teaches agents the three-zone model (local/remote-trusted/remote-opaque), the mesh.yaml config format, the sync convention, and the anti-patterns. Agents learn the pattern and apply it when needed.
+
+**Pattern confirmed:** "If it requires a running process, you've crossed the line." This is the architecture's quality gate for any future proposal.
+
+**User preference noted:** Explicit directive to avoid overengineering. The documents were developed with this constraint. Integration must be proportionally simple to the ~30 lines that the architecture converged on.
+
 ### 2026-03-15 — README Rewrite: squad-mesh Narrative
 
 **Context:** Rewrote `packages/squad-mesh/README.md` as part of the holacracy→mesh rebrand. Smithers handled the mechanical rename (folder, package.json, code symbols). Burns rewrote the narrative.

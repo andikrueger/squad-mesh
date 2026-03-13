@@ -1,0 +1,41 @@
+# mesh.yaml — Distributed squad mesh configuration
+#
+# Three zone types, each with its own transport:
+#   local          — same host, direct filesystem reads
+#   remote-trusted — different host, same org, git transport
+#   remote-opaque  — different org, published contracts only
+#
+# This file is the entire "distributed registry."
+# Put it in the root of your mesh repo or alongside your .mesh/ directory.
+
+squads:
+  # Zone 1: Local — files on this machine, read directly
+  auth-squad:
+    zone: local
+    path: ../auth-squad/.mesh
+
+  api-squad:
+    zone: local
+    path: ../api-squad/.mesh
+
+  # Zone 2: Remote-Trusted — same org, git transport
+  # git pull collapses Zone 2 into Zone 1 (files appear on disk)
+  ci-squad:
+    zone: remote-trusted
+    source: git@github.com:our-org/ci-squad.git
+    ref: main
+    sync_to: .mesh/remotes/ci-squad
+
+  data-squad:
+    zone: remote-trusted
+    source: git@github.com:our-org/data-pipeline.git
+    ref: main
+    sync_to: .mesh/remotes/data-squad
+
+  # Zone 3: Remote-Opaque — different org, published contract only
+  # You see only what they choose to expose
+  partner-fraud:
+    zone: remote-opaque
+    source: https://partner.example.com/squad-contracts/fraud/SUMMARY.md
+    sync_to: .mesh/remotes/partner-fraud
+    auth: bearer  # uses $PARTNER_FRAUD_TOKEN env var
