@@ -824,6 +824,98 @@ All agents use claude-opus-4.6 (premium) for this session and all rebrand work. 
 
 ---
 
+### 22. AI-Native Communication: A First-Principles Analysis (Burns)
+
+**Date:** 2026-03-16  
+**Author:** Burns (Lead Architect)  
+**Status:** Proposed — multi-model consensus achieved  
+**Scope:** Architectural direction, squad-mesh future  
+**Relates to:** Decision 3 (Holacracy Endgame), Decision 6 (API Contracts), Decision 4b (Evidence-Based)
+
+**Context:** User requested blank-slate rethinking of how AI agents actually communicate. Three agents (Burns, Frink, Moe) ran independently on three language models (Claude Sonnet 4.5, GPT-5.4, Claude Opus 4.6) to test consensus.
+
+**Radical Finding:** All models and all agents converge on identical core insight: **95% of squad-mesh subsystems solve human organizational problems (governance, permissions, authority, escalation) that stateless AI agents don't have.**
+
+**The Four Primitives (Universal Across All Runs):**
+
+1. **The Drop** — A file in `.mesh/drops/` with minimal frontmatter (from, tags, kind). Agents write discoveries; agents read them.
+2. **The Feed** — Agents scan `.mesh/drops/` before starting work. No pub/sub, no filtering service.
+3. **The Billboard** — One file per squad (`.mesh/boards/{squad}.md`) showing current work, blockers, capabilities.
+4. **The Mesh File** — Single config (`mesh.yaml`) listing squad names and paths. Discovery solved with a list.
+
+**What Gets Deleted (Current Subsystems):**
+
+| Subsystem | Reason |
+|---|---|
+| Discovery (marker scanning, hybrid mode, registry) | Mesh.yaml list is sufficient |
+| Steering (directives, authority levels) | Agents don't need permission systems |
+| Tension routing | Drop with `kind: question` covers it |
+| COP / Status rollup | Billboards + agents reading are enough |
+| Knowledge classification taxonomy | Agents filter by relevance better than heuristics |
+| Bridge API | Agents can read files directly |
+| Backpointers, mesh topology discovery | Mesh.yaml is source of truth |
+| Wisdom skill formalization | "Read drops, write drops" = the whole skill |
+
+**Result:** 7 subsystems, 30+ functions, 15+ types → **4 filesystem conventions, ~200 lines of helper code. 10x reduction.**
+
+**Key Insights:**
+
+- **Stateless coordination:** Agents have no persistent process, no memory between invocations. Every subsystem must assume cold start.
+- **Pull beats push:** Agents scan directories faster than humans read notifications. Pull-based discovery scales better than pub/sub.
+- **Files are the interface:** Agents read files, write files. Every protocol we designed wraps file ops with ceremony.
+- **Relevance filters:** Agents better at filtering than our heuristics. Give them raw access; let them decide what matters.
+- **Governance is human:** Authority, permissions, escalation, tension protocols—all solve human coordination failures agents don't have.
+
+**Cross-Model Validation:**
+
+| Question | GPT-5.4 | Opus 4.6 | Consensus |
+|---|---|---|---|
+| Should agents need authorization to ask questions? | No, not relevant | No, not relevant | ✓ Permission systems unnecessary |
+| Do agents need escalation timers? | No, process everything | No, process everything | ✓ Escalation is for forgetful humans |
+| Should knowledge be pre-classified? | No, agents filter better | No, agents filter better | ✓ Raw access > pre-filtered summaries |
+| What replaces current subsystems? | Filesystem conventions + git | Filesystem conventions + git | ✓ Mesh.yaml + drops/ + boards/ |
+| Lines of code needed? | ~200 | ~200 | ✓ 10x reduction accurate |
+
+**Recommendation:** Build this as `squad-mesh v0.3` alongside existing subsystems. Let real squads use both. Measure which patterns agents actually use. Expect the four primitives to cover 95% of coordination needs.
+
+**Full Analysis:**
+- `architecture-review/ai-thought-solution-gpt54.md` (GPT-5.4 perspective)
+- `architecture-review/ai-thought-solution-opus46.md` (Claude Opus 4.6 perspective)
+- `architecture-review/frink-information-flow.md` (Systems engineer breakdown of why current architecture is unnecessary)
+
+---
+
+### 23. Filesystem-Native Mesh Architecture (Frink)
+
+**Date:** 2026-03-13  
+**Author:** Frink (Systems Engineer)  
+**Status:** Proposed (related to Decision 22)  
+**Scope:** Architecture, subsystems  
+**Affects:** Burns (architecture), Smithers (implementation), all squad members
+
+**Decision:** Replace the entire squad-mesh subsystem architecture (7 subsystems, 30+ functions, 15+ types) with a filesystem convention:
+
+- `.mesh/{squad-name}/state.md` — mutable current state per squad
+- `.mesh/{squad-name}/log.md` — append-only learnings per squad
+- `ls .mesh/` — discovery
+- `git push/pull` — transport
+
+**Rationale:** Agents read files. That's the interface. Everything else (protocols, APIs, registries, type systems, prompt injection, knowledge propagation heuristics) is human infrastructure thinking projected onto agents that have none of the constraints those solutions address.
+
+**Five Realities That Make Most Architecture Unnecessary:**
+
+1. **No persistent process** — An agent wakes up, reads state, works, writes state, goes away. No running process to push notifications to. "Real-time communication" is a category error.
+2. **Parse anything** — Agents don't need schemas to read structured data. Markdown with clear headings is as machine-readable to an LLM as validated JSON.
+3. **Context window is the bottleneck** — Agents can't hold entire mesh state. They need to scan quickly: glob, read headers, decide what's relevant, load full content of what matters.
+4. **Write partitioning solves concurrency** — If agent A only writes to `A/` and agent B only writes to `B/`, zero conflicts. No locking, CRDTs, or merge resolution.
+5. **Git already exists** — Content-addressable distributed DB, branch-based concurrency, merge semantics, full audit history, transport layer (SSH, HTTPS, local fs).
+
+**Impact:** Fundamental architectural pivot, not incremental change. Requires Burns's review on whether this reframes the entire squad-mesh package scope.
+
+**Full Analysis:** `architecture-review/frink-information-flow.md`
+
+---
+
 ## Governance
 
 - All meaningful changes require team consensus
