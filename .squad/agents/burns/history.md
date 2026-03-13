@@ -660,3 +660,13 @@ This maintains filesystem simplicity while unlocking enterprise-grade org diagno
 7. **Verdict:** SOA thinking does NOT change the architecture. The file mesh already satisfies the SOA principles that matter for this domain and correctly ignores the ones that don't. The one useful takeaway is contract versioning — worth adding as a convention, not worth building infrastructure for.
 
 **Decision:** No architectural changes. Add optional `## Version` convention to SUMMARY.md/INTERFACES.md for Zone 3 (cross-org) scenarios. Filed as `burns-soa-analysis.md` in decisions/inbox.
+
+### 2026-03-16 — Mesh State Repo Does NOT Need a Squad Installation
+
+**Context:** User asked whether the shared git repo that aggregates state from multiple participating squads (the Zone 2 rendezvous point) needs its own `.squad/` installation. Scribe escalated to Burns for an architecture decision.
+
+**Decision:** NO. The mesh state repo is a plain git repository — a rendezvous point, not an intelligent system. It needs only: a root README, one directory per squad, a SUMMARY.md per squad, and optionally git branch protections. No `.squad/` folder, no agents, no automation (Phase 0–1). A GitHub Actions health check is deferred to Phase 2, earned when staleness becomes a real pain point. A "mesh observer" squad concept is legitimate but would be a separate Squad project, not installed in the state repo — deferred until someone has a concrete need.
+
+**Rationale:** Installing Squad infrastructure implies agents will read it. No agents live in the state repo. Nobody's home. The architecture principle "if it requires a running process, you've crossed the line" extends to "if it requires an agent, there needs to be someone home." The state repo is a filesystem, not a workplace.
+
+**Artifacts:** Decision filed at `.squad/decisions/inbox/burns-mesh-state-repo.md`. SKILL.md updated (both `distributed-mesh/SKILL.md` and `.squad/skills/distributed-mesh/SKILL.md`) with new "Mesh State Repo" pattern section.

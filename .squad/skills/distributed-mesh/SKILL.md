@@ -46,23 +46,26 @@ The agent interface never changes. Agents always read local files. The distribut
 
 Steps 2–4 are identical to local-only. Steps 1 and 5 are the entire distributed extension.
 
-### The mesh.yaml Config
+### The mesh.json Config
 
-```yaml
-squads:
-  auth-squad:
-    zone: local
-    path: ../auth-squad/.mesh
-  ci-squad:
-    zone: remote-trusted
-    source: git@github.com:our-org/ci-squad.git
-    ref: main
-    sync_to: .mesh/remotes/ci-squad
-  partner-fraud:
-    zone: remote-opaque
-    source: https://partner.dev/squad-contracts/fraud/SUMMARY.md
-    sync_to: .mesh/remotes/partner-fraud
-    auth: bearer
+```json
+{
+  "squads": {
+    "auth-squad": { "zone": "local", "path": "../auth-squad/.mesh" },
+    "ci-squad": {
+      "zone": "remote-trusted",
+      "source": "git@github.com:our-org/ci-squad.git",
+      "ref": "main",
+      "sync_to": ".mesh/remotes/ci-squad"
+    },
+    "partner-fraud": {
+      "zone": "remote-opaque",
+      "source": "https://partner.dev/squad-contracts/fraud/SUMMARY.md",
+      "sync_to": ".mesh/remotes/partner-fraud",
+      "auth": "bearer"
+    }
+  }
+}
 ```
 
 Three zone types, one file. Local squads need only a path. Remote-trusted need a git URL. Remote-opaque need an HTTP URL.
@@ -82,10 +85,21 @@ For selective visibility, use separate repos per audience (internal, partner, pu
 
 ### Phased Rollout
 
-- **Phase 0:** Convention only — document zones, agree on mesh.yaml fields, manually run `git pull`/`git push`. Zero new code.
-- **Phase 1:** Sync script (~30 lines bash) when manual sync gets tedious.
+- **Phase 0:** Convention only — document zones, agree on mesh.json fields, manually run `git pull`/`git push`. Zero new code.
+- **Phase 1:** Sync script (~30 lines bash or PowerShell) when manual sync gets tedious.
 - **Phase 2:** Published contracts + curl fetch when a Zone 3 partner appears.
 - **Phase 3:** Never. No MCP federation, A2A, service discovery, message queues.
+
+### Mesh State Repo
+
+The shared mesh state repo is a plain git repository — NOT a Squad project. It holds:
+- One directory per participating squad
+- Each directory contains at minimum a SUMMARY.md with the squad's current state
+- A root README explaining what the repo is and who participates
+
+No `.squad/` folder, no agents, no automation. Write partitioning means each squad only pushes to its own directory. The repo is a rendezvous point, not an intelligent system.
+
+If you want a squad that *observes* mesh health, that's a separate Squad project that lists the state repo as a Zone 2 remote in its `mesh.json` — it does NOT live inside the state repo.
 
 ## Examples
 
@@ -107,7 +121,7 @@ Three squads on different machines. One shared git repo holds the mesh. Each squ
 - ❌ **Running a sync daemon or server.** Agents are not persistent. Sync at startup, publish at shutdown.
 - ❌ **Real-time notifications.** Agents don't need real-time. They need "recent enough." `git pull` is recent enough.
 - ❌ **Schema validation for markdown.** The LLM reads markdown. If the format changes, it adapts.
-- ❌ **Service discovery protocol.** mesh.yaml is a file with 10 entries. Not a "discovery problem."
+- ❌ **Service discovery protocol.** mesh.json is a file with 10 entries. Not a "discovery problem."
 - ❌ **Auth framework.** Git SSH keys and HTTPS tokens. Not a framework. Already configured.
 - ❌ **Message queues / event buses.** Agents wake, read, work, write, sleep. Nobody's home to receive events.
 - ❌ **Any component requiring a running process.** That's the line. Don't cross it.

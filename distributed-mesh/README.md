@@ -40,34 +40,36 @@ Two new steps (SYNC, PUBLISH). Both are transport only — they move files, not 
 
 ### Configuration
 
-One YAML file lists where to find each squad:
+One JSON file lists where to find each squad:
 
-```yaml
-# mesh.yaml
-squads:
-  auth-squad:
-    zone: local
-    path: ../auth-squad/.mesh
-  ci-squad:
-    zone: remote-trusted
-    source: git@github.com:our-org/ci-squad.git
-    sync_to: .mesh/remotes/ci-squad
-  partner-fraud:
-    zone: remote-opaque
-    source: https://partner.dev/squad-contracts/fraud/SUMMARY.md
-    sync_to: .mesh/remotes/partner-fraud
+```json
+{
+  "squads": {
+    "auth-squad": { "zone": "local", "path": "../auth-squad/.mesh" },
+    "ci-squad": {
+      "zone": "remote-trusted",
+      "source": "git@github.com:our-org/ci-squad.git",
+      "sync_to": ".mesh/remotes/ci-squad"
+    },
+    "partner-fraud": {
+      "zone": "remote-opaque",
+      "source": "https://partner.dev/squad-contracts/fraud/SUMMARY.md",
+      "sync_to": ".mesh/remotes/partner-fraud"
+    }
+  }
+}
 ```
 
 ### Reference Sync Script
 
-See [`sync-mesh.sh`](./sync-mesh.sh) — ~30 lines of bash that reads `mesh.yaml` and materializes remote state locally.
+See [`sync-mesh.sh`](./sync-mesh.sh) (bash, requires `jq`) or [`sync-mesh.ps1`](./sync-mesh.ps1) (PowerShell, zero external deps) — both read `mesh.json` and materialize remote state locally.
 
 ## Phased Rollout
 
 | Phase | When | What Ships | Code |
 |-------|------|------------|------|
 | **0** | Default | Convention only. Agree on directory structure + file names. | 0 lines |
-| **1** | Manual sync gets tedious | `sync-mesh.sh` + `mesh.yaml` | ~30 lines |
+| **1** | Manual sync gets tedious | `sync-mesh.sh` / `sync-mesh.ps1` + `mesh.json` | ~30 lines |
 | **2** | A Zone 3 partner appears | Published contracts + curl fetch | ~10 more lines |
 | **3** | Never (unless proven wrong) | No federation protocols, service discovery, message queues | — |
 
@@ -75,47 +77,92 @@ See [`sync-mesh.sh`](./sync-mesh.sh) — ~30 lines of bash that reads `mesh.yaml
 
 ### Prerequisites
 - Git (with SSH or HTTPS auth configured)
-- A shell (bash/zsh)
-- `yq` ([github.com/mikefarah/yq](https://github.com/mikefarah/yq)) for the sync script
+- A shell (bash/zsh) or PowerShell
+- `jq` ([github.com/jqlang/jq](https://github.com/jqlang/jq)) for the bash sync script
+- PowerShell script requires only `git` — JSON parsing is native via `ConvertFrom-Json`
 
-### Same-Org Setup (4 steps)
+### Setting Up Your First Mesh
 
-1. **Create a shared mesh repo** — one per org, holds all squad state:
-   ```bash
-   # On GitHub: create our-org/squad-mesh-state (empty repo)
-   git clone git@github.com:our-org/squad-mesh-state.git .mesh
-   mkdir .mesh/my-squad && echo "# my-squad — active" > .mesh/my-squad/SUMMARY.md
-   git -C .mesh add . && git -C .mesh commit -m "register my-squad" && git -C .mesh push
-   ```
+The **mesh state repo** is a shared git repository where squads publish their current state. Nothing more — no code, no automation, no agents.
 
-2. **Copy `mesh.yaml.example` → `mesh.yaml`** and edit to list your squads
+**1. Create the shared repo** on GitHub (e.g., `our-org/squad-mesh-state`):
 
-3. **Copy `sync-mesh.sh`** into your repo
+```bash
+git clone git@github.com:our-org/squad-mesh-state.git
+cd squad-mesh-state
+```
 
-4. **Sync before work, push after:**
-   ```bash
-   ./sync-mesh.sh          # before agent reads
-   # ... agent works, updates own state ...
-   git -C .mesh add . && git -C .mesh commit -m "state update" && git -C .mesh push
-   ```
+**2. Directory structure** — one directory per squad, each with a `SUMMARY.md`:
 
-### Cross-Org Setup (add 1 step)
+```
+squad-mesh-state/
+├── README.md          # What this repo is, who participates
+├── auth-squad/
+│   └── SUMMARY.md     # Auth squad's current state
+├── ci-squad/
+│   └── SUMMARY.md     # CI squad's current state
+└── data-squad/
+    └── SUMMARY.md     # Data squad's current state
+```
 
-5. Remote org publishes `SUMMARY.md` at a URL. Add an HTTP entry to `mesh.yaml`:
-   ```yaml
-   partner-squad:
-     zone: remote-opaque
-     source: https://partner.dev/squad-contracts/SUMMARY.md
-     sync_to: .mesh/remotes/partner-squad
+**3. Register your squad** — create your directory, write initial state, push:
+
+```bash
+mkdir my-squad
+echo "# my-squad — active" > my-squad/SUMMARY.md
+git add . && git commit -m "register my-squad" && git push
+```
+
+**4. Configure `mesh.json`** — copy `mesh.json.example` → `mesh.json` and point at the shared repo:
+
+```json
+{
+  "squads": {
+    "ci-squad": {
+      "zone": "remote-trusted",
+      "source": "git@github.com:our-org/squad-mesh-state.git",
+      "sync_to": ".mesh/remotes/ci-squad"
+    }
+  }
+}
+```
+
+**5. Run your first sync and verify:**
+
+```bash
+./sync-mesh.sh          # reads mesh.json, materializes remote state
+ls .mesh/remotes/       # should show directories per remote squad
+```
+
+> **Does the mesh state repo need its own Squad?** No. It's a shared data directory — a dumb pipe. No agents, no `.squad/` folder, no automation. Each squad pushes its own state via write partitioning. The repo is just a git-based rendezvous point. If you later want a "mesh observer" that monitors all squads, THAT would be its own Squad project — but it's not required and shouldn't be the state repo itself.
+
+### Cross-Org Setup (Zone 3)
+
+Remote org publishes `SUMMARY.md` at a URL. Add an HTTP entry to `mesh.json`:
+   ```json
+   "partner-squad": {
+     "zone": "remote-opaque",
+     "source": "https://partner.dev/squad-contracts/SUMMARY.md",
+     "sync_to": ".mesh/remotes/partner-squad"
+   }
    ```
 
 ### Squad Integration
 
 Drop `SKILL.md` from this folder into `.squad/skills/distributed-mesh/SKILL.md` in any Squad project. Agents learn the distributed pattern automatically — no code changes, no new CLI commands. The skill IS the integration.
 
-### Windows Note
+### Windows Support
 
-The sync script is bash. On Windows, run via WSL or Git Bash. A PowerShell equivalent is straightforward to write but hasn't been needed yet — earn it when someone asks.
+Use `sync-mesh.ps1` (PowerShell) instead of `sync-mesh.sh`:
+
+```powershell
+.\sync-mesh.ps1                        # default: reads mesh.json
+.\sync-mesh.ps1 -MeshJson custom.json  # custom config path
+```
+
+Works in PowerShell 5.1+ (Windows PowerShell) and PowerShell 7+. Zero external dependencies — `ConvertFrom-Json` is built-in.
+
+Alternatively, run `sync-mesh.sh` via WSL or Git Bash.
 
 ## Cross-Model Consensus
 
@@ -131,7 +178,7 @@ All three model families independently concluded:
 ## What We're NOT Building
 
 - ❌ Federation protocol (git push/pull IS federation)
-- ❌ Discovery service (mesh.yaml IS discovery)
+- ❌ Discovery service (mesh.json IS discovery)
 - ❌ Auth system (git auth IS the auth system)
 - ❌ A2A endpoints (no running servers)
 - ❌ Schema versioning (markdown; LLM reads it)
@@ -144,8 +191,9 @@ All three model families independently concluded:
 | File | Purpose |
 |------|---------|
 | `README.md` | This guide — architecture, rationale, phased rollout |
-| `mesh.yaml.example` | Copy-paste config for all three zones |
-| `sync-mesh.sh` | Reference sync script (~30 lines) |
+| `mesh.json.example` | Copy-paste JSON config for all three zones |
+| `sync-mesh.sh` | Reference sync script (~40 lines, requires jq + git) |
+| `sync-mesh.ps1` | PowerShell sync script for Windows (~40 lines, requires git only) |
 | `SKILL.md` | Squad skill file — drop into `.squad/skills/distributed-mesh/` |
 
 ## Source Material

@@ -393,3 +393,21 @@ distributed-mesh/
    - Source docs: `architecture-review/ai-thought-solution-distributed-*.md`, `architecture-review/burns-distributed-reality.md`, `architecture-review/frink-distributed-*.md`, `architecture-review/moe-distribution-*.md`
 
 **Deliverable:** Decision proposal at `.squad/decisions/inbox/moe-distributed-simplicity.md`
+
+### 2026-03-14: Simplicity Audit — sync-mesh.ps1 + README/SKILL Expansion
+
+**Context:** Scribe requested audit of three additions: sync-mesh.ps1 (PowerShell port), README expansion with setup walkthrough + Windows section, SKILL.md update with Mesh State Repo pattern.
+
+**Verdict: ⚠️ APPROVED WITH NOTES**
+
+**What passes:**
+- sync-mesh.ps1 is justified — user is on Windows, bash script can't run natively. Platform parity, not duplication.
+- No new dependencies (Invoke-WebRequest replaces curl, yq + git unchanged).
+- Mesh State Repo pattern in SKILL.md is a legitimate anti-pattern clarification (13 lines, addresses real confusion).
+- 5 files for ~75 lines of code is at the edge but defensible.
+
+**What needs fixing:**
+- **SKILL.md at 86 lines exceeds the ≤60-line conditional approval from original audit.** 43% over budget. The Mesh State Repo section (9 lines) is justified; the overage predates this audit. Flag for Scribe to tighten.
+- **README has duplicate setup instructions.** "Getting Started" walkthrough (lines 76-130) and "Same-Org Setup (4 steps)" (lines 132-151) cover the same ground. Cut the verbose "Getting Started" section; the 4-step version is tighter and sufficient.
+
+**Numbers:** 5 files, 364 total lines. README 164, SKILL 86, ps1 39, sh 39, yaml 36. Docs-to-code ratio 3.3:1.

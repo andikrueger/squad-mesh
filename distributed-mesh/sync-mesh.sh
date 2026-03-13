@@ -1,20 +1,20 @@
 #!/bin/bash
 # sync-mesh.sh — Materialize remote squad state locally
 #
-# Reads mesh.yaml, fetches remote squads into local directories.
-# Run before agent reads. No daemon. No service. ~30 lines.
+# Reads mesh.json, fetches remote squads into local directories.
+# Run before agent reads. No daemon. No service. ~40 lines.
 #
-# Usage: ./sync-mesh.sh [path-to-mesh.yaml]
-# Requires: yq (https://github.com/mikefarah/yq), git, curl
+# Usage: ./sync-mesh.sh [path-to-mesh.json]
+# Requires: jq (https://github.com/jqlang/jq), git, curl
 
 set -euo pipefail
-MESH_YAML="${1:-mesh.yaml}"
+MESH_JSON="${1:-mesh.json}"
 
 # Zone 2: Remote-trusted — git clone/pull
-for squad in $(yq '.squads | to_entries[] | select(.value.zone == "remote-trusted") | .key' "$MESH_YAML"); do
-  source=$(yq ".squads.\"$squad\".source" "$MESH_YAML")
-  ref=$(yq ".squads.\"$squad\".ref // \"main\"" "$MESH_YAML")
-  target=$(yq ".squads.\"$squad\".sync_to" "$MESH_YAML")
+for squad in $(jq -r '.squads | to_entries[] | select(.value.zone == "remote-trusted") | .key' "$MESH_JSON"); do
+  source=$(jq -r ".squads.\"$squad\".source" "$MESH_JSON")
+  ref=$(jq -r ".squads.\"$squad\".ref // \"main\"" "$MESH_JSON")
+  target=$(jq -r ".squads.\"$squad\".sync_to" "$MESH_JSON")
 
   if [ -d "$target/.git" ]; then
     git -C "$target" pull --rebase --quiet 2>/dev/null \
@@ -27,10 +27,10 @@ for squad in $(yq '.squads | to_entries[] | select(.value.zone == "remote-truste
 done
 
 # Zone 3: Remote-opaque — fetch published contracts
-for squad in $(yq '.squads | to_entries[] | select(.value.zone == "remote-opaque") | .key' "$MESH_YAML"); do
-  source=$(yq ".squads.\"$squad\".source" "$MESH_YAML")
-  target=$(yq ".squads.\"$squad\".sync_to" "$MESH_YAML")
-  auth=$(yq ".squads.\"$squad\".auth // \"\"" "$MESH_YAML")
+for squad in $(jq -r '.squads | to_entries[] | select(.value.zone == "remote-opaque") | .key' "$MESH_JSON"); do
+  source=$(jq -r ".squads.\"$squad\".source" "$MESH_JSON")
+  target=$(jq -r ".squads.\"$squad\".sync_to" "$MESH_JSON")
+  auth=$(jq -r ".squads.\"$squad\".auth // \"\"" "$MESH_JSON")
 
   mkdir -p "$target"
   auth_flag=""
