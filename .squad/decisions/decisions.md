@@ -408,3 +408,244 @@ The `architecture-review/` directory contained 31 markdown files from developmen
 ### Verification
 
 ✅ TypeScript compilation passed
+
+---
+
+## Decision 16: Distributed Mesh Architecture Is Settled
+
+**Date:** 2026-03-13  
+**Author:** Burns (Lead Architect)  
+**Status:** Complete — architectural review concluded  
+**Scope:** Distributed squad communication across machines, orgs, and companies
+
+### The Verdict
+
+After reviewing all 8 source documents across three model families (Opus 4.6, Sonnet 4.5, GPT-5.4), three analytical perspectives (architect, systems engineer, adversarial critic), and two rounds of independent team analysis (Frink, Moe, Burns), this is settled.
+
+**The distributed extension to squad communication is a transport upgrade, not an architecture change.**
+
+The agent interface is invariant — agents read local files. The distributed layer materializes remote files locally before the agent reads them. Git is the transport for 85%+ of cases. The remaining cases need ~15 lines of curl. Total new code: ~30 lines of shell + 1 YAML config.
+
+### Load-Bearing Conclusions (All Models Agree)
+
+1. **Git IS the transport.** Not HTTP, not MCP, not A2A. Git handles auth, sync, conflict resolution, audit, and offline operation.
+2. **Three zones of trust.** Local (filesystem), Remote-Trusted (git pull), Remote-Opaque (curl). Every model family independently derived this taxonomy.
+3. **Zero running services.** The architecture stays files + conventions + existing tools.
+4. **Zero deleted subsystems reinstated.** 0 of 12 subsystems killed in the local-only round earn reinstatement.
+5. **Write partitioning eliminates conflicts.** Each squad writes only to its own directory.
+6. **Phased rollout.** Convention → sync script → published contracts → never (no protocols).
+
+### Cosmetic Disagreements (All Models)
+
+- **Config format:** Opus uses flat `.remotes` file; Sonnet/GPT use YAML. → Decision: YAML (mesh.yaml). Richer, still simple.
+- **Directory naming:** Varying names (boards/drops/squads vs state.md/log.md). → Decision: Defer to whatever Squad adopts; the pattern matters, not the names.
+- **Trust labels:** own/partner/external vs zones 1/2/3. → Decision: Use descriptive zone names (local, remote-trusted, remote-opaque).
+
+### Simplest Integration Into Squad
+
+**One file: a SKILL.md.** Drop it into `.squad/skills/distributed-mesh/SKILL.md` in the Squad repo. The skill teaches agents the three zones, the mesh.yaml format, the sync convention, and the anti-patterns.
+
+No code changes to Squad. No new CLI commands. No new templates. The skill IS the integration.
+
+### Deliverables Produced
+
+```
+distributed-mesh/
+├── README.md              — One-page architecture guide for humans
+├── mesh.yaml.example      — Copy-paste config showing all three zones
+├── sync-mesh.sh           — Reference ~30-line sync script
+└── SKILL.md               — Squad skill file (the integration artifact)
+```
+
+Four files, 273 lines total. Each justified.
+
+### Impact on Team
+
+- **Frink:** His distribution-problem.md and information-flow.md are the deepest technical source. Both confirmed and absorbed.
+- **Moe:** His 125:1 ratio and "0 of 12 reinstated" findings are the quality gate. Both preserved.
+- **Smithers:** No platform work needed. Git is the platform.
+
+---
+
+## Decision 16b: Distributed Communication — Packaging Simplicity Audit
+
+**Date:** 2026-03-13  
+**Author:** Moe (Skeptic / Critic)  
+**Status:** Complete — packaging risks prevented  
+**Scope:** Preventing the "packaging more complex than payload" anti-pattern
+
+### The Irony Problem
+
+Eight documents totaling 2,377 lines converge on a single conclusion: distribution costs ~30 lines of shell + 1 config file. The 125:1 ratio (deleted complexity vs. new complexity) is the headline.
+
+If the packaging exceeds what it describes, we've become the thing we warned about.
+
+### Overengineering Audit: Verdict NO (Simplification Applied)
+
+**Proposed inventory:** 9+ files explaining why you only need 2 files (registry + script).
+
+**Recommendation:** Cut ruthlessly. Minimum viable adoption:
+
+```
+distributed-mesh/
+├── README.md            (~80 lines)
+├── mesh.yaml.example    (~20 lines)
+└── sync-mesh.sh         (~30 lines)
+```
+
+**Total: 3 files, ~130 lines.**
+
+### What Gets Cut
+
+- ❌ contracts/ directory — No consensus, premature
+- ❌ published/ directory — Only Burns proposes, no consensus
+- ❌ .remotes flat file — squads.yaml does the same job, pick one
+- ❌ Extended mesh.yaml schema — Conflicts with squads.yaml registry
+- ❌ Separate spec documents — README covers the spec
+- ❌ Mermaid diagrams — Analysis artifacts, not adoption
+- ❌ Phase-by-phase guides — Fits in README (10 lines), not separate doc
+
+### Conditional Approval: SKILL.md
+
+Created `.squad/skills/distributed-mesh/SKILL.md` **under 60 lines including frontmatter**. Teaches agents the sync-read-work-write-publish lifecycle. Justified because Squad uses skills as the agent-teaching mechanism, but only if kept tight.
+
+### Adoption Friction: Step Count Validation
+
+**Same-org case (git transport):** 4 steps  
+**Cross-org case (git, different trust):** 5 steps  
+**Cross-company case (HTTP/published contracts):** 5 steps (remote org's burden, not yours)
+
+All under or at ceiling. ✅
+
+### Final Recommendation
+
+**Create 3 files, not a folder of documentation.** The packaging test: 3 files, ~130 lines total, 4-5 adoption steps. The content-to-ceremony ratio is honest.
+
+**Do NOT create:**
+- Separate spec documents
+- Phase-by-phase guides (put phases in README)
+- Multiple registry formats (pick squads.yaml, kill .remotes)
+- Published contracts directory (premature)
+- Mermaid diagrams or architecture docs
+
+### Key Constraint Honored
+
+"The moment you propose something that requires a running process, you've crossed the line." Zero running services. Zero new dependencies.
+
+---
+
+## Decision 16c: Distributed Communication Technical Specification
+
+**Date:** 2026-03-13  
+**Author:** Frink (Systems Engineer)  
+**Status:** Complete — specification produced  
+**Scope:** Distributed squad communication — skill, schema, sync script, agent startup
+
+### Specification Deliverables
+
+1. **SKILL.md** — Teaches the three-zone model, transport hierarchy, read patterns, write partitioning, and anti-patterns
+2. **squads.yaml schema** — Exact YAML schema with field reference (7 fields total, 3 required)
+3. **sync-mesh script spec** — Cross-platform design (Node.js recommended with bash fallback)
+4. **Agent startup spec** — Two new lifecycle phases (SYNC before read, PUBLISH after write)
+
+### Key Technical Decisions
+
+**1. Transport: Git + curl**
+- Git handles auth, sync, conflict resolution, audit, offline
+- Recommended for 85%+ of cases
+- curl (~15 lines) for cross-org HTTP scenarios
+- Zone 3 failures (remote-opaque) are non-fatal
+
+**2. Registry Format: Flat squads.yaml with zone field**
+- Simpler to parse and extend than nested zone groupings
+- One YAML block per squad, not finding the right zone section
+- Sync script filters by `zone` field
+
+**3. Materialization Directory: .mesh/remotes/**
+- All remote state lands under one well-known path
+- Agent globs `.mesh/remotes/*/SUMMARY.md` to see all remote squads
+- Zone 2 gets full mesh clones; Zone 3 gets contract files only
+
+**4. Contract Surface: SUMMARY.md + INTERFACES.md**
+- Two files, not a protocol
+- SUMMARY.md = what you're doing
+- INTERFACES.md = what you commit to
+- "Mail slot" outputs for cross-org communication
+
+### What This Does NOT Cover
+
+- Actual implementation of the sync script
+- CI/CD integration for automated sync
+- Mesh repo creation workflow
+- Garbage collection for stale drops
+- mesh.yaml governance
+
+These are implementation concerns, addressed when spec is approved and someone builds it.
+
+---
+
+## Decision 16d: Distributed Tooling Design — Convention-First Adoption
+
+**Date:** 2026-03-13  
+**Author:** Smithers (Platform Engineer)  
+**Status:** Complete — design and adoption path settled  
+**Scope:** Setup experience, tooling assessment, Squad skill integration, adoption friction
+
+### Design Philosophy
+
+User directive: "Choose the most simple implementation path." Every decision filtered through this constraint.
+
+### Key Decisions
+
+**1. Script Language: Bash Only**
+
+30-line script doesn't warrant cross-platform maintenance. Document PowerShell equivalent as reference, don't maintain it. All operations work identically in bash environments.
+
+**2. CLI Integration: Deferred (Convention First)**
+
+No `squad sync` command or `--distributed` flag yet. Distributed pattern has zero production users. Earn the PR to Squad CLI after 3+ teams validate the convention.
+
+**3. Adoption Path: Template Files + Documentation**
+
+Not scaffolding or CLI magic. Three files users copy and edit:
+- `squads.yaml.example`
+- `sync-mesh.sh.example`
+- `.squad/skills/distributed-mesh/SKILL.md`
+
+Template files eliminate transcription errors; documentation tells you what to type.
+
+**4. Skill Integration: distributed-mesh/SKILL.md**
+
+Location: `.squad/skills/distributed-mesh/SKILL.md`  
+Teaching: sync-read-work-write-publish lifecycle, zone trust model, write partitioning, anti-patterns  
+Maintained under 60 lines including frontmatter
+
+### 4-Step Setup Guide
+
+1. Create shared mesh repo (once per org)
+2. Register your squad (echo to state.md)
+3. Add squads.yaml listing known squads
+4. Sync before work, push after work
+
+**Step count: 4.** No daemon, no server, no config service.
+
+### Error Cases Handled
+
+- git pull auth failures → SSH key troubleshooting
+- git push non-fast-forward → rebase guidance
+- curl 404 for Zone 3 → contact partner (human problem)
+- Missing .mesh directory → clone command
+- Stale data → sync guidance
+- yq not found → install guidance or simplified script variant
+
+### Phased Graduation to CLI
+
+**Phase 0 (now):** Convention + templates + skill  
+**Phase 1 (3+ teams validating):** `squad mesh init` command to Squad CLI  
+**Phase 2 (cross-org appears):** Zone 3 HTTP support in sync script  
+
+### Impact
+
+Entire distributed tooling layer: **3 template files, 1 skill, 0 new dependencies, 0 running services.**
+
+Users copy files, edit YAML, and run git pull. That's the platform.

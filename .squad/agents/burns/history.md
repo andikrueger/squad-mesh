@@ -9,6 +9,25 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-03-13 — Distributed Mesh Architecture Integrated Into Squad Repo
+
+**Context:** Distributed-mesh/ folder created in squad-architecture repo and SKILL.md installed into .squad/skills/distributed-mesh/ for live Squad agent use. Four-agent review consolidated and archived to decisions.md.
+
+**Deliverables shipped:**
+- `distributed-mesh/README.md` — Architecture guide for humans
+- `distributed-mesh/mesh.yaml.example` — Copy-paste config with all three trust zones
+- `distributed-mesh/sync-mesh.sh` — Reference ~30-line sync implementation
+- `distributed-mesh/SKILL.md` — Squad skill (integrated into Squad framework)
+- `.squad/skills/distributed-mesh/SKILL.md` — Live skill for agent learning
+
+**Decisions merged to `.squad/decisions/decisions.md`:**
+- Decision 16: Distributed Mesh Architecture settled (Burns verdict)
+- Decision 16b: Packaging simplicity audit (Moe audit, overengineering prevented)
+- Decision 16c: Technical specification (Frink schema/sync/startup specs)
+- Decision 16d: Tooling design & adoption path (Smithers 4-step setup, convention-first)
+
+**Installation:** Moved Frink's spec files to architecture-review/ as reference material (not adoption artifacts). Canonical SKILL.md at `distributed-mesh/SKILL.md` to be copied to Squad's `.squad/skills/distributed-mesh/`.
+
 ### 2026-03-16 — Distributed Mesh Architecture Review (Settled)
 
 **Context:** Reviewed all 8 distributed communication documents across three model families (Opus 4.6, Sonnet 4.5, GPT-5.4). Each family independently ran three-agent analysis (architect, systems engineer, adversarial critic). Total reviewed: ~180KB of analysis.
@@ -20,7 +39,7 @@
 - `distributed-mesh/mesh.yaml.example` — Config showing all three zones
 - `distributed-mesh/sync-mesh.sh` — Reference ~30-line sync script
 - `distributed-mesh/SKILL.md` — Squad skill file for integration
-- `.squad/decisions/inbox/burns-distributed-review.md` — Decision record
+- `.squad/decisions/decisions.md` — Decision records (merged from inbox)
 
 **Squad integration path:** Single SKILL.md file at `.squad/skills/distributed-mesh/SKILL.md`. No code changes to Squad. The skill teaches agents the three-zone model (local/remote-trusted/remote-opaque), the mesh.yaml config format, the sync convention, and the anti-patterns. Agents learn the pattern and apply it when needed.
 

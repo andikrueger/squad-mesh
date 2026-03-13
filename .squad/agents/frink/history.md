@@ -9,6 +9,45 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-03-13: Distributed Communication Technical Specification — Completed
+
+**Context:** Produced complete technical specification for packaging distributed squad communication into a Squad skill. Four specification deliverables created covering skill content, YAML schema, sync script design, and agent startup integration.
+
+**Specification Deliverables:**
+
+1. **SKILL.md** — Full Squad skill teaching the three-zone model, transport hierarchy, read patterns, write partitioning, and anti-patterns
+2. **squads.yaml schema spec** — Exact YAML field reference (7 fields total, 3 required per entry)
+3. **sync-mesh script spec** — Cross-platform design (Node.js recommended with bash fallback)
+4. **Agent startup integration spec** — Two new lifecycle phases (SYNC before read, PUBLISH after write)
+
+**Key Technical Decisions:**
+
+**1. Transport: Git + curl**
+- Git handles auth, sync, conflict resolution, audit, offline operation
+- Recommended for 85%+ of cases
+- curl (~15 lines) for cross-org HTTP scenarios
+- Zone 3 failures (remote-opaque) are non-fatal
+
+**2. Registry Format: Flat squads.yaml with zone field**
+- Simpler to parse and extend than nested zone groupings
+- One YAML block per squad, not finding the right zone section
+- Sync script filters by `zone` field
+
+**3. Materialization Directory: .mesh/remotes/**
+- All remote state lands under one well-known path
+- Agent globs `.mesh/remotes/*/SUMMARY.md` to see all remote squads
+- Zone 2 gets full mesh clones; Zone 3 gets contract files only
+
+**4. Contract Surface: SUMMARY.md + INTERFACES.md**
+- Two files, not a protocol
+- SUMMARY.md = what you're doing
+- INTERFACES.md = what you commit to
+- "Mail slot" outputs for cross-org communication
+
+**Implementation Deferred:** Specs are reference material, not adoption artifacts. Moved to architecture-review/ per coordinator reconciliation. Actual implementation happens when spec is approved and someone builds it.
+
+**Decision filed:** `.squad/decisions/decisions.md` (Decision 16c) — Complete technical specification.
+
 ### 2026-03-11: Protocol Layer Analysis for Squad-of-Squads
 
 **Context:** Analyzed the project owner's draft architecture showing ACP → MCP → A2A three-layer protocol stack for org hub + squads communication.
@@ -142,3 +181,27 @@
 8. **Technical verdict: SOA lens confirms architecture is sound.** The mesh is accidentally SOA-compliant in the ways that matter (loose coupling, service contracts, discoverable endpoints) and deliberately SOA-non-compliant in the ways that don't (no ESB, no WSDL, no runtime registry). The gaps identified are either intentional simplifications or deferred to the 15+ squad scale.
 
 **Decision:** SOA analysis does not reveal any blocking gaps. The architecture is more SOA-aligned than it appears at first glance. Filed to `.squad/decisions/inbox/frink-soa-analysis.md`.
+
+### 2026-03-16: Distributed Communication Specification — Squad Skill Packaging
+
+**Context:** Team is packaging the distributed squad communication architecture into a Squad skill. Wrote the complete technical specification across four deliverables.
+
+**Key Decisions:**
+
+1. **Node.js for sync script** — single cross-platform script (~55 lines, zero npm deps) over maintaining bash + PowerShell pair. Every Squad env has Node. `child_process.execSync` wraps git and curl. `yq` dependency for YAML parsing is acceptable.
+
+2. **squads.yaml as flat list** — each squad entry has a `zone` field (local/remote-trusted/remote-opaque) rather than nested zone groupings. Simpler to parse and extend. 7 fields total, 3 required for every entry (name, zone, path-or-source).
+
+3. **`.mesh/remotes/` as materialization directory** — all remote state lands here after sync. Agent globs `.mesh/remotes/*/SUMMARY.md` for unified view. Zone 2 gets full mesh clones; Zone 3 gets SUMMARY.md + INTERFACES.md only.
+
+4. **Zone 3 failures are non-fatal** — stub file written on fetch failure so agent knows squad exists but is unreachable. Remote-opaque squads never block primary work.
+
+5. **SKILL.md uses the anti-pattern list as a guardrail** — 10 specific anti-patterns documented (service discovery, MCP for cross-squad, A2A for cross-org, message queues, real-time sync, schema versioning, conflict resolution, coordinator service, CRDTs, running processes). These are the overengineering traps the team validated across 6 architecture reviews.
+
+**Files Created:**
+- `.squad/skills/distributed-communication/SKILL.md` — The Squad skill (full frontmatter + 7 patterns + 3 examples + 10 anti-patterns)
+- `.squad/skills/distributed-communication/squads-yaml-spec.md` — Registry schema with field reference
+- `.squad/skills/distributed-communication/sync-script-spec.md` — Sync script requirements + MVP implementation
+- `.squad/skills/distributed-communication/agent-startup-spec.md` — Lifecycle changes + system prompt additions
+
+**Decision filed:** `.squad/decisions/inbox/frink-distributed-spec.md`

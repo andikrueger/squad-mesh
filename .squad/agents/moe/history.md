@@ -9,6 +9,37 @@
 
 <!-- Append new learnings below. Each entry is something lasting about the project. -->
 
+### 2026-03-13: Distributed Architecture Simplicity Audit — Overengineering Prevented
+
+**Context:** Eight documents totaling 2,377 lines converge on a single conclusion: distribution costs ~30 lines of shell + 1 config file. Conducted packaging audit to ensure packaging complexity doesn't exceed payload complexity.
+
+**Audit Finding:** Initial proposals risked 9+ files to explain why you only need 2 files (registry + script). Applied ruthless simplification.
+
+**Final Recommendation:** 3 files, ~130 lines total.
+```
+distributed-mesh/
+├── README.md            (~80 lines)
+├── mesh.yaml.example    (~20 lines)
+└── sync-mesh.sh         (~30 lines)
+```
+
+**Rejected (overengineering risks):**
+- ❌ contracts/ directory — No consensus
+- ❌ published/ directory — Premature
+- ❌ .remotes flat file — squads.yaml does the same job
+- ❌ Extended mesh.yaml schema — Conflicts with squads.yaml registry
+- ❌ Separate spec documents — README covers it
+- ❌ Mermaid diagrams — Analysis artifacts, not adoption
+- ❌ Phase-by-phase guides — Fits in README, not separate doc
+
+**Approved (conditional):** `.squad/skills/distributed-mesh/SKILL.md` — under 60 lines including frontmatter. Justified because Squad uses skills for agent teaching, but only if kept tight.
+
+**Adoption friction validation:** 4 steps for same-org case (git transport), 5 steps for cross-org, under or at ceiling. ✅
+
+**Decision filed:** `.squad/decisions/decisions.md` (Decision 16b) — Packaging audit with cost-benefit analysis and final recommendation.
+
+**Key constraint honored:** "The moment you propose something that requires a running process, you've crossed the line." Zero running services, zero new dependencies.
+
 ### 2026-03-11: Critical Review of Squad-of-Squads Architecture
 
 **Context:** The project owner proposed a three-layer protocol stack (ACP + MCP + A2A) with a central Org Context Hub for multi-squad coordination.
@@ -338,3 +369,27 @@
 7. **Verdict:** SOA changes nothing. Don't adopt the vocabulary (we have better terms). Don't adopt the patterns (we already have the useful ones). Don't adopt the infrastructure (it's the thing we deleted). SOA is a $0 check — the answer to every question it raises is "we already solved this with files."
 
 **Deliverable:** Decision proposal at `.squad/decisions/inbox/moe-soa-verdict.md`
+
+### 2025-07-24: Distributed Packaging Simplicity Audit
+
+**Context:** 8 documents (2,377 lines total) in architecture-review/ converge on the same answer: distribution costs ~30 lines of shell + 1 config file. Team is now packaging these findings for adoption. Moe audited the packaging for overengineering.
+
+**Key Findings:**
+
+1. **Packaging irony is real.** 8 analysis docs → 2,377 lines about a 30-line solution. If the new adoption folder exceeds ~130 lines, the packaging is heavier than the payload. Apply the content's own principles to itself.
+
+2. **Minimum adoption: 3 files.** README.md (~80 lines), squads.yaml.example (~20 lines), sync-mesh.sh (~30 lines). Everything else is premature. contracts/ directory (Sonnet-only proposal), published/ directory (Burns-only proposal), .remotes file (redundant with squads.yaml) — all cut.
+
+3. **SKILL.md: conditional yes, ≤60 lines.** The `.squad/skills/distributed-communication/` placeholder exists. The skill format is the squad project's agent-teaching mechanism, so it earns its place — but only if held tight. More than 60 lines means the content belongs in README.
+
+4. **Adoption friction: 4-5 steps.** Same-org: create shared repo, add squads.yaml, copy sync script, run it. Under the 5-step ceiling. Cross-company adds 2 steps but those are the remote org's problem.
+
+5. **Pick one registry format.** squads.yaml wins over .remotes and extended mesh.yaml. Don't ship three formats for the same purpose.
+
+6. **Key file paths:**
+   - Decision: `.squad/decisions/inbox/moe-distributed-simplicity.md`
+   - Skill placeholder: `.squad/skills/distributed-communication/` (empty, awaiting SKILL.md)
+   - Existing skill template: `.squad/skills/project-conventions/SKILL.md` (57 lines, unfilled)
+   - Source docs: `architecture-review/ai-thought-solution-distributed-*.md`, `architecture-review/burns-distributed-reality.md`, `architecture-review/frink-distributed-*.md`, `architecture-review/moe-distribution-*.md`
+
+**Deliverable:** Decision proposal at `.squad/decisions/inbox/moe-distributed-simplicity.md`

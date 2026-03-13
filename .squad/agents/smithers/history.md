@@ -24,3 +24,58 @@
 - **Package rename: @bradygaster/squad-holacracy → squad-holacracy.** Renamed npm package from scoped to unscoped. 9 files updated: package.json name field, README header/badge/install-command/import-statements (5 references), src code JSDoc examples (index.ts, builders/index.ts, conventions.ts). Build clean, `npm pack --dry-run` verified unscoped name. Breaking change for consumers (import path update required). Peer dependency squad-sdk remains scoped intentionally. Decision merged to decisions.md.
 
 - **Package rename: squad-holacracy → squad-mesh (full rebrand).** Renamed directory via `git mv packages/squad-holacracy packages/squad-mesh` to preserve history. Updated 14 files: package.json (name, description, keywords, repository.directory, test script paths), package-lock.json, src/index.ts (module JSDoc + export), src/builders/index.ts (import examples + class rename), src/conventions.ts (install instruction + import example), src/types.ts (module JSDoc + tension type comment), src/knowledge/index.ts (console.warn prefixes), src/steering/index.ts (console.warn prefixes), src/cli/index.ts (extension description), tests/integration/discovery.test.ts (run path), README.md (title, badge, install/import examples, error class name), meta-squad.config.ts and test-my-squads.mjs (import paths). Renamed `HolacracyValidationError` → `MeshValidationError` throughout source + README. Build clean, `npm pack --dry-run` confirms `squad-mesh@0.1.0`. Zero remaining holacracy references in package source/tests/config. Architecture-review docs not touched (Burns owns README/docs rewrite). Breaking change for consumers.
+
+### 2026-03-13: Distributed Tooling Design — Convention-First Adoption Path Settled
+
+**Context:** Designed practical tooling and adoption experience for distributed squad communication. Reconciled all five architecture documents and three model families into a concrete 4-step setup guide with realistic error cases and friction analysis.
+
+**Design Decisions:**
+
+**1. Script Language: Bash Only**
+- 30-line script doesn't warrant cross-platform maintenance
+- Document PowerShell equivalent as reference, don't maintain it
+- All operations (git pull, git clone, curl, mkdir) work identically across bash environments
+
+**2. CLI Integration: Deferred (Convention First)**
+- No `squad sync` command or `--distributed` flag yet
+- Distributed pattern has zero production users
+- Earn the PR to Squad CLI after 3+ teams validate the convention
+- Phase 1 (when adoption proven): contribute `squad mesh init` command
+- Phase 2 (when cross-org appears): add Zone 3 HTTP support
+
+**3. Adoption Path: Template Files + Documentation**
+- Not scaffolding or CLI magic
+- Three files users copy and edit: `squads.yaml.example`, `sync-mesh.sh.example`, `.squad/skills/distributed-mesh/SKILL.md`
+- Template files eliminate transcription errors
+- Documentation tells you what to type; templates give you a starting point
+
+**4. Skill Integration: distributed-mesh/SKILL.md**
+- Location: `.squad/skills/distributed-mesh/SKILL.md`
+- Teaching: sync-read-work-write-publish lifecycle
+- Zones: local/git/http trust model
+- Constraints: write partitioning, shared drop directory
+- Anti-patterns: don't build transport into agents, don't cache across sessions, don't negotiate capabilities
+
+**4-Step Setup Guide:**
+
+1. Create shared mesh repo (once per org)
+2. Register your squad (echo to state.md)
+3. Add squads.yaml listing known squads
+4. Sync before work, push after work
+
+**Step count: 4.** No daemon, no server, no config service.
+
+**Error Cases Handled:** Git auth failures, non-fast-forward conflicts, Zone 3 404s, missing .mesh directory, stale data, yq not found — all documented with troubleshooting guidance.
+
+**Phased Graduation to CLI:**
+- **Phase 0 (now):** Convention + templates + skill
+- **Phase 1 (3+ teams validating):** `squad mesh init` command to Squad CLI
+- **Phase 2 (cross-org appears):** Zone 3 HTTP support in sync script
+
+**Key Constraint Honored:** User directive "Choose the most simple implementation path."
+
+**Entire distributed tooling layer: 3 template files, 1 skill, 0 new dependencies, 0 running services.**
+
+**Decision filed:** `.squad/decisions/decisions.md` (Decision 16d) — Tooling design, 4-step setup, adoption friction analysis.
+
+- **Distributed tooling design: convention-first, no CLI integration yet.** Reviewed 5 distributed architecture documents (Burns, Frink, Moe across Sonnet 4.5, Opus 4.6, GPT-5.4). Key decisions: (1) bash-only sync script — 30 lines doesn't warrant cross-platform maintenance; document PowerShell equivalent but don't ship it. (2) No Squad CLI integration yet — distributed pattern has zero production users; earn the PR to Brady's repo after 3+ teams validate the convention. (3) Template files + docs as adoption path — `squads.yaml.example` and `sync-mesh.sh.example` users copy and edit. (4) Created Squad skill `.squad/skills/distributed-mesh/SKILL.md` teaching agents the sync-read-work-write-publish lifecycle, zone trust model, and write partitioning rules. (5) 4-step setup guide designed for someone with 2-3 squads on different machines. Decision filed at `.squad/decisions/inbox/smithers-distributed-tooling.md`. User directive "choose the most simple implementation path" is the governing constraint — no running services, no new dependencies, no scaffolding commands.

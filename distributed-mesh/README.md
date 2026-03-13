@@ -71,6 +71,52 @@ See [`sync-mesh.sh`](./sync-mesh.sh) — ~30 lines of bash that reads `mesh.yaml
 | **2** | A Zone 3 partner appears | Published contracts + curl fetch | ~10 more lines |
 | **3** | Never (unless proven wrong) | No federation protocols, service discovery, message queues | — |
 
+## Getting Started
+
+### Prerequisites
+- Git (with SSH or HTTPS auth configured)
+- A shell (bash/zsh)
+- `yq` ([github.com/mikefarah/yq](https://github.com/mikefarah/yq)) for the sync script
+
+### Same-Org Setup (4 steps)
+
+1. **Create a shared mesh repo** — one per org, holds all squad state:
+   ```bash
+   # On GitHub: create our-org/squad-mesh-state (empty repo)
+   git clone git@github.com:our-org/squad-mesh-state.git .mesh
+   mkdir .mesh/my-squad && echo "# my-squad — active" > .mesh/my-squad/SUMMARY.md
+   git -C .mesh add . && git -C .mesh commit -m "register my-squad" && git -C .mesh push
+   ```
+
+2. **Copy `mesh.yaml.example` → `mesh.yaml`** and edit to list your squads
+
+3. **Copy `sync-mesh.sh`** into your repo
+
+4. **Sync before work, push after:**
+   ```bash
+   ./sync-mesh.sh          # before agent reads
+   # ... agent works, updates own state ...
+   git -C .mesh add . && git -C .mesh commit -m "state update" && git -C .mesh push
+   ```
+
+### Cross-Org Setup (add 1 step)
+
+5. Remote org publishes `SUMMARY.md` at a URL. Add an HTTP entry to `mesh.yaml`:
+   ```yaml
+   partner-squad:
+     zone: remote-opaque
+     source: https://partner.dev/squad-contracts/SUMMARY.md
+     sync_to: .mesh/remotes/partner-squad
+   ```
+
+### Squad Integration
+
+Drop `SKILL.md` from this folder into `.squad/skills/distributed-mesh/SKILL.md` in any Squad project. Agents learn the distributed pattern automatically — no code changes, no new CLI commands. The skill IS the integration.
+
+### Windows Note
+
+The sync script is bash. On Windows, run via WSL or Git Bash. A PowerShell equivalent is straightforward to write but hasn't been needed yet — earn it when someone asks.
+
 ## Cross-Model Consensus
 
 All three model families independently concluded:
