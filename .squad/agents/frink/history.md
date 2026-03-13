@@ -103,3 +103,18 @@
 **Decision:** Hybrid approach (Option C) proved correct. Standalone CLI works today. `registerCommands()` exported and ready for Squad SDK plugin hook when that appears. No new dependencies — process.argv parsing only.
 
 **Learnings:** Zero-dep pattern scales to CLI layer. Standing up a working CLI in one sprint removed blocker for squad members to validate discovery/status logic without waiting for SDK handshake. `bin` field in package.json is the right lever for standalone distribution.
+
+### 2026-03-13: Distributed Information Flow — Git Repos as Transport
+
+**Context:** Previous information flow analysis (frink-information-flow.md) assumed all squads share a filesystem. New constraint: squads may be on different machines, different networks, different orgs. Designed the distribution layer.
+
+**Key Findings:**
+1. **Three strategies exist: Sync, Fetch, Publish.** Same-org uses Sync (one shared git repo). Cross-org uses Fetch (clone their mesh repo read-only). These compose cleanly.
+2. **Git repos ARE the transport layer.** One mesh repo per trust boundary. `git push` = publish. `git pull` = subscribe. Git auth = access control. No new protocols, servers, or APIs.
+3. **One new artifact: `.mesh/.remotes`** — flat file listing remote mesh repo URLs and trust levels. This is the entire cross-org configuration surface.
+4. **Trust is binary per repo.** Can clone = can see all squads in that mesh. Can't clone = invisible. Selective visibility = separate repos for different audiences.
+5. **Agent interface unchanged.** Still reads local files. The only distribution cost: run `git pull` before reading. One shell command.
+
+**Self-correction:** My original protocol analysis proposed federation protocols, A2A endpoints, capability negotiation, MCP extensions. All unnecessary. Git solved the distributed state problem decades ago. The mesh just needs to use it.
+
+**Artifacts:** `architecture-review/frink-distributed-information-flow.md`, `.squad/decisions/inbox/frink-distributed-mesh.md`.
