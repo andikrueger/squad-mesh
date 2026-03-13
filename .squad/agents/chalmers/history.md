@@ -158,3 +158,23 @@
 **Cross-squad learning:** Burns' directive tension type (Decision 6) creates governance events that Chalmers' governance/timeline.md (Decision 7, P1) will log. Status heartbeats carry the aggregate data upward. Health metrics (Decision 7, P2) surface governance thrashing that would indicate too many fast-cycling directives.
 
 **Key realization:** Rep link pattern (Robertson holacracy) maps to agent status files. This is minimum viable information flow without adding meetings or overhead.
+
+### 2026-03-16: SOA organizational pattern analysis — the enterprise mirror
+
+**Context:** Andi asked for a comparative analysis of our file-based mesh architecture through the lens of Service-Oriented Architecture (SOA), mapping enterprise IT history onto squad coordination.
+
+**Key findings:**
+- **SOA as organizational pattern:** SOA emerged in the early 2000s as an organizational response to siloed enterprise systems (the same problem we're solving for AI squads). The analogy holds for loose coupling, service contracts, and discovery — but breaks on centralized governance, ESB middleware dependency, and runtime orchestration.
+- **Conway's Law expression:** Our `.mesh/` directory structure is a *purer* expression of Conway's Law than traditional SOA. SOA maps team boundaries to service boundaries through governance overhead. Our architecture maps squad boundaries directly to filesystem directories — zero indirection, zero middleware. The org chart IS the directory tree.
+- **SOA vs. biological coordination:** SOA is centrally designed; biological networks (mycelium, ant stigmergy) are emergent. Our file-based mesh is structurally closer to biological coordination — no central registry required, write-partitioned state is stigmergic, discovery is `ls` not UDDI. But it has SOA's contract discipline via `INTERFACES.md` and role charters.
+- **Lifecycle mapping:** SOA's formal lifecycle (design→develop→deploy→manage→retire) maps imperfectly to squad lifecycle (spawn→orient→work→share→evolve). SOA's deploy/manage phases add value for long-lived services; they're overhead for ephemeral squads. Our tension-driven evolution (holacracy) replaces SOA's change management committees with machine-speed governance.
+- **Governance comparison:** SOA governance (design-time + runtime + change management) is committee-heavy and slow. Our git-based governance (decisions.md + tension protocol + holacracy) is faster, auditable, and structurally prevents the governance bottleneck that killed many SOA initiatives.
+- **Six SOA anti-patterns analyzed:** (1) ESB as God Object — our mesh has no central broker; (2) SOAP/WS-* complexity spiral — our 30-line sync script cannot bloat; (3) Governance theater — our governance is code, not committees; (4) Chatty services — our async file reads prevent cascading calls; (5) Shared database coupling — write partitioning makes this structurally impossible; (6) Big Bang SOA — our phased rollout (convention→script→contracts→never) prevents this.
+- **Verdict:** SOA vocabulary is useful (contracts, loose coupling, service boundaries). SOA framework is partially useful (contract discipline, boundary thinking). SOA governance model is inappropriate (too slow, too committee-dependent). Our architecture has already absorbed SOA's best insights and avoided its worst patterns — largely by accident, because filesystem + git naturally provides what SOA had to engineer artificially.
+
+**Organizational law discovered:** SOA's primary failure mode was adding coordination infrastructure that became more complex than the coordination problem it solved. Our architecture's primary defense is that its coordination infrastructure (filesystem + git) is *older, simpler, and more battle-tested* than the systems it coordinates. This inversion — infrastructure simpler than applications — is the structural reason our approach avoids SOA's failure modes.
+
+**Predictions:**
+- Teams will try to add SOA-like service registries as squad count grows beyond 15; this should be resisted until pain is measured
+- The SOA vocabulary (contracts, service boundaries, loose coupling) will remain useful for explaining our architecture to enterprise audiences
+- SOA's runtime governance concepts (SLAs, circuit breakers, throttling) will become relevant only if squads gain persistent runtime (daemon mode), not before

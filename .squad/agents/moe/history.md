@@ -316,3 +316,25 @@
 **Updated one-sentence test:** "Each squad maintains a SUMMARY.md; local squads read it from the filesystem, remote squads are fetched via git pull or curl from a list of URLs, and agents read all of them before starting work."
 
 **Deliverable:** `architecture-review/moe-distribution-teardown.md`
+
+### 2026-03-16: SOA Complexity Audit — Does SOA Change Anything?
+
+**Context:** Someone suggested "let's consider SOA." Moe audited whether SOA thinking justifies any additional complexity beyond the team's agreed 30-line file-based architecture. Three rounds of prior analysis had converged on: filesystem IS the mesh, 30 lines of shell + 1 config file, zero running services, "the moment you propose something that requires a running process, you've crossed the line."
+
+**Key Findings:**
+
+1. **SOA anti-patterns we correctly avoid: 11 of 11.** ESB single-point-of-failure, WS-* specification bloat, governance frameworks, contract-first paralysis, canonical data models, centralized registries, service taxonomies, protocol mediation, orchestration engines, schema versioning bureaucracy, monitoring infrastructure. Our file-based architecture dodges every one. Adopting SOA vocabulary would re-invite at least 5 of these.
+
+2. **SOA vocabulary vs. machinery split:** 4 SOA concepts are just vocabulary for what we already do (service boundaries = squad directories, loose coupling = write partitioning, contracts = SUMMARY.md, service autonomy = squad independence). 7 SOA concepts would tempt machinery (service registry, service bus, contract validation, orchestration, choreography, governance, canonical schemas). The vocabulary adds zero value — we already have better names.
+
+3. **SUMMARY.md vs. WSDL/OpenAPI:** SUMMARY.md is a better contract for LLM consumers. It's human-readable, LLM-parseable, zero-tooling, zero-versioning-overhead, and fails gracefully (LLM adapts to format changes). WSDL/OpenAPI are better for machine-to-machine with strict type checking. Our consumers are LLMs, not parsers. SUMMARY.md wins.
+
+4. **What SOA got wrong:** Assumed coordination requires infrastructure. Confused "thinking in services" with "building service infrastructure." Created a cottage industry of middleware. Our file-based approach avoids all of this because files have zero operational burden.
+
+5. **What SOA got right that we should steal:** Nothing that requires code. The one useful insight — "define boundaries and communicate through contracts" — we already do with squad directories and SUMMARY.md. Cost of stealing: 0 lines.
+
+6. **Line count test:** Implementing "SOA best practices" would cost ~2,000-5,000 lines minimum (service registry, contract validation, message bus, orchestration, monitoring). Current solution: 30 lines + 1 config file. Ratio: 67:1 to 167:1.
+
+7. **Verdict:** SOA changes nothing. Don't adopt the vocabulary (we have better terms). Don't adopt the patterns (we already have the useful ones). Don't adopt the infrastructure (it's the thing we deleted). SOA is a $0 check — the answer to every question it raises is "we already solved this with files."
+
+**Deliverable:** Decision proposal at `.squad/decisions/inbox/moe-soa-verdict.md`

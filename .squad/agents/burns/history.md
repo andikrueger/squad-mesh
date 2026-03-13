@@ -597,3 +597,28 @@ This maintains filesystem simplicity while unlocking enterprise-grade org diagno
 **Key insight:** Consolidation forces you to distinguish load-bearing decisions from exploratory noise. Of 31 files and thousands of lines, the essential story fits in ~280 lines: one mechanism (tension loop), one topology (mesh), one substrate (git), one principle (earn your complexity). The rest was the team working through the problem — valuable during development, but the conclusions matter more than the journey for new contributors.
 
 **PII handling:** All references to the project owner by name were replaced with "the project owner" in the summary. The original files contained attributions that shouldn't appear in a public repo.
+
+### 2026-03-16 — SOA Lens Analysis of File-Based Mesh Architecture
+
+**Context:** Andi requested an analysis of the squad communication architecture through the lens of Service-Oriented Architecture (SOA). Three rounds of blank-slate analysis (local, distributed, cross-model consensus) had already converged on: `.mesh/` directory, per-squad state files, mesh.yaml for discovery, git for sync, three trust zones. The question: does SOA thinking reveal something those rounds missed?
+
+**Key Findings:**
+
+1. **SOA Principle Mapping (5/8 satisfied, 2 N/A, 1 partially violated):**
+   - ✅ Standardized contracts (SUMMARY.md), loose coupling (file-based async), abstraction (agent doesn't know transport), autonomy (squads own their state), discoverability (mesh.yaml/squads.yaml)
+   - N/A: Reusability and composability (not applicable — squads aren't callable services)
+   - ⚠️ Statelessness partially violated — squads accumulate state in log.md. But this is a feature, not a bug: AI agents need memory. SOA's statelessness principle optimizes for horizontal scaling of identical service instances, which doesn't map to autonomous cognitive agents.
+
+2. **Service Boundaries Verdict:** SUMMARY.md is a service *billboard*, not a service *contract* in the SOA sense. It lacks the key element of a contract: an invocable interface with defined request/response semantics. This is correct for our architecture — squads communicate through shared state, not request/response. The file mesh is closer to a **shared-nothing blackboard architecture** than SOA.
+
+3. **Git as ESB:** Git functions as a document-oriented Enterprise Service Bus with remarkable fidelity: message routing (repo structure), transformation (none needed — markdown is universal), transport abstraction (SSH/HTTPS), audit logging (git log). But it inverts the ESB anti-pattern: instead of centralizing logic in the bus, all logic stays in the agents. Git is a dumb pipe with history. This is the correct inversion.
+
+4. **Pattern Classification:** The file mesh is NOT SOA, NOT microservices, NOT event-driven architecture. It is a **stigmergic coordination system** — agents communicate by modifying a shared environment (the filesystem), and other agents sense those modifications. Closest analogues: ant pheromone trails, Wikipedia edit patterns, blackboard architectures from 1980s AI. This is a known pattern, but not one typically applied to software service architectures.
+
+5. **What SOA validates:** Contract-first design (SUMMARY.md before code), loose coupling (no direct dependencies), and service autonomy (squads make independent decisions). We're already doing all three.
+
+6. **What SOA reveals as a gap:** No versioning of contracts. SUMMARY.md has no version field, no deprecation notice convention, no breaking-change signal. SOA gets this right — service contracts should be versioned. For the file mesh, this could be as simple as a `## Version` section or a frontmatter field. Low effort, genuine value for multi-org scenarios. **This is the one actionable finding.**
+
+7. **Verdict:** SOA thinking does NOT change the architecture. The file mesh already satisfies the SOA principles that matter for this domain and correctly ignores the ones that don't. The one useful takeaway is contract versioning — worth adding as a convention, not worth building infrastructure for.
+
+**Decision:** No architectural changes. Add optional `## Version` convention to SUMMARY.md/INTERFACES.md for Zone 3 (cross-org) scenarios. Filed as `burns-soa-analysis.md` in decisions/inbox.

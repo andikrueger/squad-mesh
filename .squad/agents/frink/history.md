@@ -118,3 +118,27 @@
 **Self-correction:** My original protocol analysis proposed federation protocols, A2A endpoints, capability negotiation, MCP extensions. All unnecessary. Git solved the distributed state problem decades ago. The mesh just needs to use it.
 
 **Artifacts:** `architecture-review/frink-distributed-information-flow.md`, `.squad/decisions/inbox/frink-distributed-mesh.md`.
+
+### 2026-03-16: SOA Lens Analysis of File-Based Mesh Architecture
+
+**Context:** Andi requested a formal Service-Oriented Architecture (SOA) analysis of the squad communication mesh. Mapped the file-based mesh against classic SOA concepts: service contracts, service registries, message exchange patterns, coupling dimensions, ESB comparison, governance, and anti-patterns.
+
+**Key Findings:**
+
+1. **Service contracts map cleanly.** `SUMMARY.md` = capability advertisement (cf. WSDL portType). `state.md` = runtime status (no SOA equivalent — this is better). `INTERFACES.md` = formal contract (cf. OpenAPI/WSDL). The mesh's document-oriented contracts are more LLM-friendly than schema-rigid SOA contracts.
+
+2. **Discovery is a document-oriented registry.** `mesh.yaml` / `.remotes` / `sources.yaml` function as a static service registry — equivalent to UDDI conceptually, but file-based, version-controlled, and human-readable. No runtime registry server needed. Git history provides change audit that UDDI never had.
+
+3. **Three of four MEPs supported.** Fire-and-forget (drops), publish-subscribe (state.md/log.md via git pull), and document exchange (contracts/) map directly. Request-reply is structurally absent — and correctly so, because agents are asynchronous batch processors, not request-response services.
+
+4. **Coupling analysis is favorable.** Temporal coupling: very low (async by design). Spatial coupling: eliminated (local filesystem abstraction). Data format coupling: minimal (markdown, not schemas). Platform coupling: zero (files + git). The one tight coupling point: *semantic coupling* — squads must agree on section headings in SUMMARY.md to communicate effectively.
+
+5. **Git is a better ESB than ESBs.** Git provides message routing (push/pull), protocol mediation (SSH/HTTPS), audit logging (commit history), and versioning (branches/tags). What it lacks vs. ESB: message transformation, content-based routing, service orchestration. These are correctly absent — the LLM is the transformation engine.
+
+6. **Governance gaps are real but benign.** No formal SLA mechanism, no versioning protocol for contract changes, no deprecation lifecycle. These are the right gaps to have at current scale (<15 squads). They become pain points at 15-30 squads.
+
+7. **One anti-pattern detected: "Shared Database."** All squads read/write the same git repo — this is structurally a shared database. Write partitioning mitigates it, but the coupling is real: a corrupted mesh repo affects all squads. Mitigation: repo-per-trust-boundary already addresses this.
+
+8. **Technical verdict: SOA lens confirms architecture is sound.** The mesh is accidentally SOA-compliant in the ways that matter (loose coupling, service contracts, discoverable endpoints) and deliberately SOA-non-compliant in the ways that don't (no ESB, no WSDL, no runtime registry). The gaps identified are either intentional simplifications or deferred to the 15+ squad scale.
+
+**Decision:** SOA analysis does not reveal any blocking gaps. The architecture is more SOA-aligned than it appears at first glance. Filed to `.squad/decisions/inbox/frink-soa-analysis.md`.
