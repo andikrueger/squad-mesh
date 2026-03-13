@@ -292,3 +292,27 @@
 - Specific blockers: Windows MAX_PATH, steering persistence, config documentation
 - Complexity audit: 38% waste (knowledge, health, learning classification)
 - Real impact assessment: 30-50% Windows users will hit MAX_PATH, knowledge feature never used as-is
+
+### 2026-03-14: Distribution Teardown — Round Two
+
+**Context:** Round one demolished the entire protocol stack: "cat SUMMARY.md is the whole system." The project owner challenged: not all squads are on the same machine. Alice's laptop, Bob's CI server, different GitHub orgs, different companies. Does distribution vindicate the deleted architecture?
+
+**Key Findings:**
+
+1. **Local-only breaks completely for remote squads.** `fs.readFileSync` throws ENOENT for any squad not co-located. Total blackout, not graceful degradation. This was flagged in my own stress test (Decision 11) but hand-waved away.
+
+2. **Zero of 12 deleted subsystems earn reinstatement.** Distribution doesn't vindicate discovery engines, knowledge classification, steering subsystems, auto-escalation, COP rollup, Bridge APIs, or the MCP/A2A/ACP protocol stack. Every one remains dead.
+
+3. **The gap between local and distributed is ~30 lines of shell script.** A `squads.yaml` registry (name → location type + URL), a sync script that runs `git pull` for git-hosted squads and `curl` for HTTP-hosted squads, and one extra `cat` line in agent startup.
+
+4. **95% of distributed scenarios need zero new code.** Same-org different-machine = shared git repo. Different org = git remote add. Only cross-company (HTTP + bearer token) needs new code (~15 lines). Air-gapped = tar + manual transfer.
+
+5. **The line is: no running processes.** The moment someone proposes a server, coordinator service, message queue, or event bus, they must justify what it does that `git pull` doesn't. Agents are not persistent processes — there's no one home to receive events.
+
+6. **The protocol stack is still dead.** ACP, MCP, A2A, Org Context Hub — none justified by distribution. Git is the transport. Curl is the fallback. SUMMARY.md is still the format.
+
+**Verdict:** Distribution adds a mail slot to the cottage, not a new cathedral. ~30 lines of sync script, 1 YAML config, 0 new services, 0 resurrected subsystems.
+
+**Updated one-sentence test:** "Each squad maintains a SUMMARY.md; local squads read it from the filesystem, remote squads are fetched via git pull or curl from a list of URLs, and agents read all of them before starting work."
+
+**Deliverable:** `architecture-review/moe-distribution-teardown.md`
